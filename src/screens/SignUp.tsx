@@ -112,7 +112,7 @@ export const SignUp = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <View style={styles.safeArea}>
       <StatusBar style="dark" />
       
       <NavHeader title="회원가입" onBack={() => navigation.goBack()} />
@@ -214,7 +214,7 @@ export const SignUp = () => {
           disabled={!isFormValid || isLoading} 
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

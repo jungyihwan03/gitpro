@@ -103,7 +103,7 @@ export const Login = () => {
   const handleKakaoLogin = () => Alert.alert('카카오 로그인', '현재 준비 중입니다.');
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <View style={styles.safeArea}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.mainContent}>
@@ -159,7 +159,7 @@ export const Login = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
