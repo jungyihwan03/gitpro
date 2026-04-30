@@ -5,7 +5,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// 김민경 작업물 (모든 스크린 임포트)
+// 모든 스크린 임포트
 import { Login } from './src/screens/Login';
 import { SignUp } from './src/screens/SignUp';
 import { FindPassword } from './src/screens/FindPassword';
@@ -24,53 +24,56 @@ import Map from './src/screens/Map';
 import CafeDetailScreen from './src/screens/CafeDetailScreen';
 import CafeMenuScreen from './src/screens/CafeMenuScreen';
 
-// 백엔드 이환님 작업물
-import BackendTest from './App_backup'; 
-
 const Stack = createNativeStackNavigator();
+
+// ── [로그인 후 여백이 적용되는 메인 스택] ──
+function MainAppStack({ route }: any) {
+  // 🌟 Login/BasicInfo에서 보낸 데이터(params)를 추출합니다.
+  const userParams = route.params || {};
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top', 'bottom']}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {/* 🌟 HomeScreen에 유저 데이터를 initialParams로 확실하게 주입합니다. */}
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen} 
+          initialParams={userParams} 
+        />
+        <Stack.Screen name="History" component={HistoryScreen} />
+        <Stack.Screen name="Map" component={Map} />
+        <Stack.Screen name="Search" component={SearchScreen} />
+        <Stack.Screen name="BrandSelect" component={BrandSelectScreen} />
+        <Stack.Screen name="CafeDetail" component={CafeDetailScreen} />
+        <Stack.Screen name="CafeMenu" component={CafeMenuScreen} />
+        <Stack.Screen name="MenuDetail" component={MenuDetailScreen} />
+        <Stack.Screen name="MenuScannerCamera" component={MenuScannerCamera} />
+        <Stack.Screen name="Analyze" component={AnalyzeScreen} />
+        <Stack.Screen name="AnalyzeFail" component={AnalyzeFailScreen} />
+        <Stack.Screen name="AnalyzeResult" component={AnalyzeResultScreen} />
+      </Stack.Navigator>
+    </SafeAreaView>
+  );
+}
 
 export default function App() {
   return (
     <SafeAreaProvider style={{ flex: 1 }}>
-      {/* 🌟 방패막(SafeAreaView)을 치고 상하단 안전 영역을 확보합니다. */}
-      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-        
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-            
-            {/* ── [로그인 & 회원가입] ── */}
-            <Stack.Screen name="Login" component={Login} />
-            <Stack.Screen name="SignUp" component={SignUp} />
-            <Stack.Screen name="FindPassword" component={FindPassword} />
-            <Stack.Screen name="FindId" component={FindId} />
-            <Stack.Screen name="BasicInfo" component={BasicInfo} />
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+          
+          {/* ── [인증 섹션: 여백 없음] ── */}
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="SignUp" component={SignUp} />
+          <Stack.Screen name="FindPassword" component={FindPassword} />
+          <Stack.Screen name="FindId" component={FindId} />
+          <Stack.Screen name="BasicInfo" component={BasicInfo} />
 
-            {/* ── [메인 & 지도 & 기록] ── */}
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="History" component={HistoryScreen} />
-            <Stack.Screen name="Map" component={Map} />
+          {/* ── [메인 섹션: 여백 있음] ── */}
+          <Stack.Screen name="MainTabs" component={MainAppStack} />
 
-            {/* ── [검색 및 카페 상세] ── */}
-            <Stack.Screen name="Search" component={SearchScreen} />
-            <Stack.Screen name="BrandSelect" component={BrandSelectScreen} />
-            <Stack.Screen name="CafeDetail" component={CafeDetailScreen} />
-            <Stack.Screen name="CafeMenu" component={CafeMenuScreen} />
-            <Stack.Screen name="MenuDetail" component={MenuDetailScreen} />
-
-            {/* ── [카메라 & 메뉴 분석] 새로 추가된 화면들! ── */}
-            <Stack.Screen name="MenuScannerCamera" component={MenuScannerCamera} />
-            <Stack.Screen name="Analyze" component={AnalyzeScreen} />
-            <Stack.Screen name="AnalyzeFail" component={AnalyzeFailScreen} />
-            <Stack.Screen name="AnalyzeResult" component={AnalyzeResultScreen} />
-
-          </Stack.Navigator>
-        </NavigationContainer>
-
-      </SafeAreaView>
+        </Stack.Navigator>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
-
-  // 💡 이환님이 기능 테스트하고 싶을 땐, 위 return 문을 통째로 주석 처리하고 
-  // 아래 주석을 풀어서 사용하시면 됩니다!
-  // return <BackendTest />; 
 }

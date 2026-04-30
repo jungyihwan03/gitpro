@@ -1,186 +1,149 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image, SafeAreaView } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { BACKEND_API_URL } from '../constants';
 
-// 🌟 네비게이션 도구 임포트
-import { useNavigation } from '@react-navigation/native';
+export default function AnalyzeResult() {
+  const route = useRoute<any>();
+  const navigation = useNavigation<any>();
 
-import NavHeader from '../components/NavHeader';
-import ResultPhotoPreview from '../components/ResultPhotoPreview';
-import SelectableMenuCard from '../components/SelectableMenuCard';
-import { Colors } from '../constants';
+  // 🌟 route.params가 undefined일 경우를 대비해 기본값 설정
+  // 이를 통해 "Cannot read property 'menuData' of undefined" 에러를 방지합니다.
+  const { menuData = [], analyzedImage = null } = route.params || {};
 
-// 📋 가상의 결과 데이터
-const RESULT_MENUS = [
-  { id: '1', emoji: '☕', brand: '스타벅스', name: '아이스 아메리카노', meta: 'Tall · 15kcal · 카페인 150mg' },
-  { id: '2', emoji: '🥛', brand: '스타벅스', name: '카페 라떼', meta: 'Tall · 180kcal · 카페인 75mg' },
-  { id: '3', emoji: '🍮', brand: '스타벅스', name: '카라멜 마키아또', meta: 'Tall · 240kcal · 카페인 75mg' },
-  { id: '4', emoji: '🧋', brand: '스타벅스', name: '콜드 브루', meta: 'Tall · 5kcal · 카페인 155mg' },
-  { id: '5', emoji: '🍫', brand: '스타벅스', name: '자바 칩 프라푸치노', meta: 'Tall · 430kcal · 카페인 105mg' },
-];
+  // 메뉴 선택 시 DB에 저장하는 함수
+  const handleSaveMenu = async (item: any) => {
+    try {
+      // "카페인 150mg" 문자열에서 숫자만 추출 (정규식 사용)
+      const caffeineMatch = item.meta.match(/\d+/);
+      const caffeineValue = caffeineMatch ? parseInt(caffeineMatch[0]) : 0;
 
-export default function AnalyzeResultScreen() {
-  const navigation = useNavigation<any>(); // 🌟 네비게이션 장착
-  
-  // ✨ 하나만 선택하도록 기억하는 상태 (id를 저장합니다)
-  const [selectedId, setSelectedId] = useState<string | null>('1'); 
+      const response = await fetch(`${BACKEND_API_URL}/coffee/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          coffeeName: item.name,
+          caffeine: caffeineValue,
+          brand: item.brand,
+        }),
+      });
 
-  const handleSubmit = () => {
-    if (!selectedId) {
-      Alert.alert('알림', '메뉴를 먼저 선택해주세요!');
-      return;
+      if (response.ok) {
+        Alert.alert("저장 완료", `${item.name}이(가) 기록되었습니다!`);
+        navigation.navigate('Home'); // 저장 후 홈으로 이동
+      } else {
+        throw new Error('저장 실패');
+      }
+    } catch (error) {
+      console.error("저장 에러:", error);
+      Alert.alert("오류", "데이터베이스 저장에 실패했습니다.");
     }
-    
-    // 🌟 [기능 연결] 선택한 메뉴 정보를 가지고 상세 화면으로 이동합니다.
-    const selectedMenu = RESULT_MENUS.find(m => m.id === selectedId);
-    console.log('기록할 메뉴:', selectedMenu?.name);
-
-    navigation.navigate('MenuDetail', { 
-      menuId: selectedId,
-      menuName: selectedMenu?.name 
-    });
   };
 
-  return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
-      <NavHeader 
-        title="AI 인식 결과" 
-        onBack={() => navigation.goBack()} 
-      />
-
-      <ScrollView 
-        style={styles.scrollArea}
-        contentContainerStyle={{ paddingBottom: 160 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <ResultPhotoPreview />
-
-        {/* 💡 AI 배너 */}
-        <View style={styles.aiBanner}>
-          <View style={styles.aiIconWrap}>
-            <Ionicons name="sparkles" size={16} color="#8B2E3A" />
-          </View>
-          <View>
-            <Text style={styles.aiBannerText}>분석 완료 · 메뉴판에서 5개 메뉴를 찾았어요</Text>
-            <Text style={styles.aiBannerSub}>드신 메뉴를 선택해주세요</Text>
-          </View>
-        </View>
-
-        {/* 📄 본문 콘텐츠 */}
-        <View style={styles.content}>
-          <View style={styles.headerTextWrap}>
-            <Text style={styles.resultTitle}>어떤 메뉴를{'\n'}드셨나요?</Text>
-            <Text style={styles.resultSub}>메뉴판에서 인식된 메뉴 목록이에요. 드신 것을 선택해주세요.</Text>
-          </View>
-
-          <View>
-            <Text style={styles.sectionTitle}>인식된 메뉴</Text>
-            <View style={styles.menuList}>
-              {RESULT_MENUS.map((menu) => (
-                <SelectableMenuCard
-                  key={menu.id}
-                  emoji={menu.emoji}
-                  brand={menu.brand}
-                  name={menu.name}
-                  meta={menu.meta}
-                  isSelected={selectedId === menu.id}
-                  onPress={() => setSelectedId(menu.id)} 
-                />
-              ))}
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* 🛑 하단 고정 버튼 (Footer) */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit} activeOpacity={0.8}>
-          <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-          <Text style={styles.btnPrimaryText}>선택한 메뉴 기록하기</Text>
-        </TouchableOpacity>
-        
+  // 분석된 데이터가 없을 경우 보여줄 화면
+  if (!menuData || menuData.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>분석된 메뉴가 없습니다.</Text>
         <TouchableOpacity 
-          style={styles.btnOutlined} 
-          activeOpacity={0.6}
-          onPress={() => navigation.navigate('Search')} // 직접 검색으로 이동
+          style={styles.backButton} 
+          onPress={() => navigation.goBack()}
         >
-          <Text style={styles.btnOutlinedText}>목록에 없어요, 직접 검색할게요</Text>
+          <Text style={styles.backButtonText}>다시 촬영하기</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    );
+  }
+
+  const renderItem = ({ item }: any) => (
+    <TouchableOpacity style={styles.card} onPress={() => handleSaveMenu(item)}>
+      <View style={styles.emojiContainer}>
+        <Text style={styles.emoji}>{item.emoji || '☕'}</Text>
+      </View>
+      <View style={styles.info}>
+        <Text style={styles.brand}>{item.brand}</Text>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.meta}>{item.meta}</Text>
+      </View>
+      <View style={styles.addButton}>
+        <Text style={styles.addText}>추가</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
+        <Text style={styles.title}>분석 결과 ({menuData.length}개)</Text>
+        <Text style={styles.subtitle}>오늘 마신 음료를 선택하세요</Text>
+      </View>
+
+      <FlatList
+        data={menuData}
+        keyExtractor={(item, index) => item.id || index.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F6F6F6' },
-  scrollArea: { flex: 1 },
-  
-  aiBanner: {
-    backgroundColor: '#FFF8F1',
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFEDD5',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  header: { 
+    padding: 20, 
+    backgroundColor: '#FFF', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#EEE',
+    paddingTop: 10 
+  },
+  closeButton: { alignSelf: 'flex-end', padding: 5 },
+  closeButtonText: { fontSize: 20, color: '#999' },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  subtitle: { fontSize: 14, color: '#666', marginTop: 4 },
+  list: { padding: 16 },
+  card: {
     flexDirection: 'row',
+    backgroundColor: '#FFF',
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 12,
     alignItems: 'center',
-    gap: 10,
-  },
-  aiIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(139,46,58,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiBannerText: { fontSize: 14, fontWeight: '700', color: '#8B2E3A' },
-  aiBannerSub: { fontSize: 12, color: '#999999', marginTop: 1 },
-  
-  content: { padding: 24, gap: 24 },
-  headerTextWrap: { gap: 4 },
-  resultTitle: { fontSize: 22, fontWeight: '700', color: '#111111', lineHeight: 32, letterSpacing: -0.3 },
-  resultSub: { fontSize: 14, color: '#999999', lineHeight: 22 },
-  
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111111', marginBottom: 16 },
-  menuList: { gap: 12 },
-  
-  footer: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingTop: 12,
-    paddingBottom: 28, 
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    gap: 10,
-    elevation: 16,
+    // 그림자 설정
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  btnPrimary: {
-    width: '100%',
-    height: 52,
-    borderRadius: 9999,
-    backgroundColor: '#8B2E3A',
-    flexDirection: 'row',
-    alignItems: 'center',
+  emojiContainer: {
+    width: 50,
+    height: 50,
+    backgroundColor: '#F1F3F5',
+    borderRadius: 25,
     justifyContent: 'center',
-    gap: 8,
-  },
-  btnPrimaryText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  btnOutlined: {
-    width: '100%',
-    height: 48,
-    borderRadius: 9999,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginRight: 15,
   },
-  btnOutlinedText: { fontSize: 14, fontWeight: '500', color: '#999999' },
+  emoji: { fontSize: 24 },
+  info: { flex: 1 },
+  brand: { fontSize: 12, color: '#8B2E3A', fontWeight: 'bold' },
+  name: { fontSize: 16, color: '#222', fontWeight: '600', marginVertical: 2 },
+  meta: { fontSize: 12, color: '#666' },
+  addButton: { 
+    backgroundColor: '#8B2E3A', 
+    paddingHorizontal: 15, 
+    paddingVertical: 8, 
+    borderRadius: 20 
+  },
+  addText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
+  // 빈 화면 스타일
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' },
+  emptyText: { fontSize: 16, color: '#666', marginBottom: 20 },
+  backButton: { backgroundColor: '#333', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
+  backButtonText: { color: '#FFF', fontWeight: 'bold' }
 });

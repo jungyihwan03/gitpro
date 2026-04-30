@@ -1,13 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// 🌟 Expo 도구
+// 필수 라이브러리
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
+// SDK 54 대응용 legacy 모듈
+import * as FileSystem from 'expo-file-system/legacy'; 
+import * as ImageManipulator from 'expo-image-manipulator'; 
 import { useNavigation } from '@react-navigation/native';
 
-// 컴포넌트 임포트
+import { BACKEND_API_URL } from '../constants'; 
 import CameraTopBar from '../components/CameraTopBar';
 import CameraBottomBar from '../components/CameraBottomBar';
 import ScannerGuide from '../components/ScannerGuide';
@@ -16,51 +19,106 @@ export default function MenuScannerCamera() {
   const navigation = useNavigation<any>();
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const cameraRef = useRef<any>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
 
-  if (!permission) return <View style={styles.container} />;
+  // 🌟 [에러 해결용] CameraTopBar에 타입이 정의되지 않아 발생하는 에러를 차단하기 위한 처리
+  const TopBar = CameraTopBar as any;
 
+  if (!permission) return <View style={styles.container} />;
   if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>메뉴판을 촬영하려면 카메라 권한이 필요해요!</Text>
+        <Text style={styles.permissionText}>메뉴판 촬영을 위해 카메라 권한이 필요해요!</Text>
         <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>카메라 권한 허용하기</Text>
+          <Text style={styles.permissionBtnText}>권한 허용하기</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
+  const analyzeMenuImage = async (uri: string) => {
+    try {
+      // 🌟 로딩 시작
+      setIsAnalyzing(true);
+
+      console.log("📸 1. 이미지 처리 시작");
+
+      // [1] 이미지 최적화
+      const manipulatedImage = await ImageManipulator.manipulateAsync(
+        uri,
+        [{ resize: { width: 1200 } }], 
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      console.log("✅ 2. 최적화 완료");
+
+      // [2] Base64 변환
+      const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
+        encoding: 'base64', 
+      });
+
+      console.log("✅ 3. Base64 변환 성공");
+
+      // [3] 서버 전송
+      const cleanUrl = BACKEND_API_URL.endsWith('/') ? BACKEND_API_URL.slice(0, -1) : BACKEND_API_URL;
+      const targetUrl = `${cleanUrl}/api/analyze-menu`;
+
+      const response = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ 4. 분석 데이터 수신 완료:", result.length, "개 메뉴");
+
+      // 🌟 데이터 준비 완료 후 분석 결과 페이지로 이동 (replace를 써서 뒤로가기 시 분석중 화면 방지)
+      navigation.replace('AnalyzeResult', { 
+        menuData: result, 
+        analyzedImage: manipulatedImage.uri 
+      });
+
+    } catch (error: any) {
+      console.error('⚠️ 분석 에러 상세:', error);
+      // 에러 발생 시 실패 화면으로 이동하거나 알림창 띄우기
+      navigation.navigate('AnalyzeFail', { sourceType: 'camera' });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleShutter = async () => {
-    if (cameraRef.current) {
+    if (cameraRef.current && !isAnalyzing) {
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-        });
-        navigation.navigate('Analyze', { imageUri: photo.uri, source: 'camera' });
-      } catch (error) {
-        console.error('촬영 실패:', error);
+        const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
+        analyzeMenuImage(photo.uri);
+      } catch (e) {
+        console.error("촬영 에러:", e);
       }
     }
   };
 
   const handleGallery = async () => {
+    if (isAnalyzing) return;
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      quality: 0.8,
+      quality: 0.7,
     });
     if (!result.canceled) {
-      navigation.navigate('Analyze', { imageUri: result.assets[0].uri, source: 'gallery' });
+      analyzeMenuImage(result.assets[0].uri);
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* ── 🌟 [수정] CameraView를 단독 태그로 분리 ── */}
       <CameraView 
         style={StyleSheet.absoluteFillObject} 
         facing={facing} 
@@ -68,39 +126,35 @@ export default function MenuScannerCamera() {
         ref={cameraRef}
       />
 
-      {/* ── 🌟 [수정] 모든 UI 레이어는 CameraView와 '형제'가 되어야 함 ── */}
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
-        
-        {/* 상단 컨트롤 바 */}
-        <CameraTopBar 
+        {/* 🌟 해결: any 타입으로 캐스팅한 TopBar 사용 */}
+        <TopBar 
           onClose={() => navigation.goBack()}
-          onFlash={() => setFlash(current => (current === 'off' ? 'on' : 'off'))}
+          onFlash={() => setFlash(f => f === 'off' ? 'on' : 'off')}
         />
 
-        {/* 메뉴판 시뮬레이션 UI (중앙 배치) */}
+        {/* 🌟 로딩 레이어 (상단 바보다 위로 오게 zIndex 설정) */}
+        {isAnalyzing && (
+          <View style={styles.loadingLayer}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text style={styles.loadingText}>AI가 메뉴판을 정밀 분석 중입니다...</Text>
+            <Text style={styles.loadingSubText}>잠시만 기다려 주세요 (약 5~10초)</Text>
+          </View>
+        )}
+
         <View style={styles.centerContainer} pointerEvents="none">
-           <View style={styles.menuBoard}>
-            <Text style={styles.menuBoardTitle}>☕ COFFEE MENU (예시)</Text>
-            <View style={styles.menuRow}><Text style={styles.menuRowName}>아이스 아메리카노</Text><Text style={styles.menuRowPrice}>4,500원</Text></View>
-            <View style={styles.menuRow}><Text style={styles.menuRowName}>카페 라떼</Text><Text style={styles.menuRowPrice}>5,000원</Text></View>
+          <View style={styles.menuBoard}>
+            <Text style={styles.menuBoardTitle}>☕ AI MENU SCANNER</Text>
+            <Text style={styles.menuRowName}>글자가 잘 보이도록 찍어주세요</Text>
           </View>
         </View>
 
-        {/* 팁 배너 */}
-        <View style={styles.tipBannerWrap} pointerEvents="none">
-          <View style={styles.tipBanner}>
-            <Text style={styles.tipBannerText}>📋 메뉴판 전체가 보이도록 찍어주세요</Text>
-          </View>
-        </View>
+        <ScannerGuide hintText="메뉴판 전체가 나오도록 맞춰주세요" />
 
-        {/* 가이드 프레임 */}
-        <ScannerGuide hintText="메뉴판이 프레임 안에 들어오도록 맞춰주세요" />
-
-        {/* 하단 컨트롤 (갤러리, 셔터 등) */}
         <CameraBottomBar 
           onGalleryPress={handleGallery}
           onShutterPress={handleShutter}
-          onSwitchCamera={() => setFacing(current => (current === 'back' ? 'front' : 'back'))}
+          onSwitchCamera={() => setFacing(f => f === 'back' ? 'front' : 'back')}
         />
       </SafeAreaView>
     </View>
@@ -109,21 +163,32 @@ export default function MenuScannerCamera() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  overlay: { ...StyleSheet.absoluteFillObject }, // 카메라 위에 덮씌우는 레이어
+  overlay: { ...StyleSheet.absoluteFillObject },
+  loadingLayer: { 
+    ...StyleSheet.absoluteFillObject, 
+    backgroundColor: 'rgba(0,0,0,0.85)', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    zIndex: 999 // 🌟 가장 위에 뜨도록 설정
+  },
+  loadingText: { color: '#FFF', marginTop: 16, fontSize: 16, fontWeight: 'bold' },
+  loadingSubText: { color: 'rgba(255,255,255,0.6)', marginTop: 8, fontSize: 12 },
   
-  permissionContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0D1520', padding: 20 },
-  permissionText: { color: 'white', marginBottom: 20, fontSize: 16, textAlign: 'center' },
-  permissionBtn: { backgroundColor: '#8B2E3A', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 8 },
+  permissionContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0D1520' },
+  permissionText: { color: 'white', marginBottom: 20 },
+  permissionBtn: { backgroundColor: '#8B2E3A', padding: 12, borderRadius: 8 },
   permissionBtnText: { color: 'white', fontWeight: '700' },
   
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  menuBoard: { width: 300, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8, padding: 16, gap: 10 },
-  menuBoardTitle: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 4 },
-  menuRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
-  menuRowName: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.8)' },
-  menuRowPrice: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
-  
-  tipBannerWrap: { position: 'absolute', top: 100, left: 0, right: 0, alignItems: 'center' },
-  tipBanner: { backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 9999, paddingVertical: 8, paddingHorizontal: 20 },
-  tipBannerText: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.9)' },
+  menuBoard: { 
+    width: 280, 
+    backgroundColor: 'rgba(255,255,255,0.1)', 
+    borderRadius: 12, 
+    padding: 20, 
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)'
+  },
+  menuBoardTitle: { fontSize: 12, fontWeight: '800', color: 'rgba(255,255,255,0.6)', marginBottom: 4 },
+  menuRowName: { fontSize: 14, color: '#FFF', fontWeight: '500' },
 });

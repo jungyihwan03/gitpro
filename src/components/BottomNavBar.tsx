@@ -4,8 +4,8 @@ import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../constants';
 import { useBottomSheetStore } from '../store/useBottomSheetStore';
 
-// 🌟 네비게이션 도구 임포트
-import { useNavigation } from '@react-navigation/native';
+// 🌟 네비게이션 및 라우트 정보 임포트
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 interface BottomNavBarProps {
   activeTab: '홈' | '지도' | '분석' | '설정';
@@ -13,27 +13,23 @@ interface BottomNavBarProps {
 
 export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
   const { openRecordSheet } = useBottomSheetStore();
-  
-  // 🌟 네비게이션 장착 (TS 에러 방지용 <any> 추가)
   const navigation = useNavigation<any>();
+  const route = useRoute<any>(); // 🌟 현재 유저 정보(params)를 가져오기 위함
 
-  // 🛠 개발 중 알림 함수
   const showAlert = (name: string) => {
     Alert.alert("알림", `${name} 기능은 현재 개발 중입니다.`);
   };
 
   return (
-    // 🌟 원래 디자인 그대로: height 100과 pointerEvents 유지
     <View style={styles.container} pointerEvents="box-none">
       
-      {/* 진짜 하단 흰색 바 영역 (80px) */}
       <View style={styles.navBarBg}>
         
-        {/* 🏠 홈 탭 */}
+        {/* 🏠 홈 탭: 🌟 현재 유저 정보(route.params)를 다시 넘겨주어 닉네임을 보존합니다. */}
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.6}
-          onPress={() => navigation.navigate('Home')}
+          onPress={() => navigation.navigate('Home', { ...route.params })}
         >
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill={activeTab === '홈' ? Colors.primary : Colors.text2} />
@@ -45,7 +41,7 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.6}
-          onPress={() => navigation.navigate('Map')}
+          onPress={() => navigation.navigate('Map', { ...route.params })}
         >
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z" fill={activeTab === '지도' ? Colors.primary : Colors.text2} />
@@ -53,14 +49,12 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
           <Text style={[styles.navLabel, activeTab === '지도' && styles.activeLabel]}>지도</Text>
         </TouchableOpacity>
 
-        {/* 플러스 버튼이 들어갈 빈 공간 */}
         <View style={styles.fabSpace} />
 
-        {/* 📊 분석 탭 (알림창으로 변경) */}
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.6}
-          onPress={() => showAlert('분석')} 
+          onPress={() => navigation.navigate('MenuScannerCamera')} 
         >
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z" fill={activeTab === '분석' ? Colors.primary : Colors.text2} />
@@ -68,9 +62,8 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
           <Text style={[styles.navLabel, activeTab === '분석' && styles.activeLabel]}>분석</Text>
         </TouchableOpacity>
 
-        {/* ⚙️ 설정 탭 (알림창으로 변경) */}
         <TouchableOpacity 
-          style={[styles.navItem, { marginTop: 12 }]} 
+          style={[styles.navItem]} 
           activeOpacity={0.6}
           onPress={() => showAlert('설정')}
         >
@@ -81,7 +74,6 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
         </TouchableOpacity>
       </View>
 
-      {/* 🌟 기존 튀어나오는 플러스 버튼 디자인 유지 */}
       <View style={styles.navFabWrap} pointerEvents="box-none">
         <TouchableOpacity style={styles.navFab} activeOpacity={0.8} onPress={openRecordSheet}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -108,9 +100,7 @@ const styles = StyleSheet.create({
   navItem: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', paddingVertical: 9.5, marginHorizontal: 6.5 },
   navLabel: { fontSize: 12, fontWeight: '400', color: Colors.text2, letterSpacing: -0.22, marginTop: 2 },
   activeLabel: { color: Colors.primary, fontWeight: '700' },
-  
   fabSpace: { width: 72, marginHorizontal: 6.5 }, 
-  
   navFabWrap: {
     position: 'absolute', bottom: 30, 
     left: '50%', marginLeft: -32,

@@ -7,7 +7,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 // ---------------------------------------------------------
 // [필수] API Key 입력
 // ---------------------------------------------------------
-const GOOGLE_MAPS_API_KEY = 'AIzaSyDL4nJm241dUoVTCkCc32bjpklfnlQwU6A';
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 // 카페 데이터 타입 정의
 interface CafeData {

@@ -2,33 +2,53 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-// import { useRoute, useNavigation } from '@react-navigation/native'; // ⛔ UI 테스트 중에는 주석 처리!
+import { useRoute, useNavigation } from '@react-navigation/native'; // 🌟 주석 해제!
 
 import NavHeader from '../components/NavHeader';
 import SourceChip from '../components/SourceChip'; 
 import FailPhotoPreview from '../components/FailPhotoPreview';
 
 export default function AnalyzeFailScreen() {
-  // ⛔ 네비게이션 연결 전이므로 이 부분도 잠깐 주석 처리합니다.
-  // const route = useRoute();
-  // const navigation = useNavigation<any>();
-  // const params = route.params as AnalyzeRouteParams;
-  
-  // ✨ 수동으로 값을 넣어서 테스트해 보세요! ('camera' 또는 'gallery'로 변경하며 확인)
-  const sourceType = 'camera'; // 'camera' | 'gallery'
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+
+  // 🌟 AnalyzeScreen에서 넘겨받은 파라미터 (어떤 경로로 들어왔는지 파악)
+  // 만약 직접 테스트 중이라면 기본값으로 'camera'를 설정합니다.
+  const sourceType = route.params?.sourceType || 'camera'; 
   const isCamera = sourceType === 'camera';
+
+  // [다시 시도] 버튼 핸들러
+  const handleRetry = () => {
+    if (isCamera) {
+      // 카메라 화면으로 돌아가기
+      navigation.goBack(); 
+    } else {
+      // 갤러리 선택을 위해 다시 이전 화면으로 가거나 특정 스캔 화면으로 이동
+      navigation.goBack();
+    }
+  };
+
+  // [직접 검색] 버튼 핸들러
+  const handleSearchManually = () => {
+    // 🌟 내비게이션에 등록된 검색 화면(SearchScreen)으로 이동
+    navigation.navigate('SearchScreen'); 
+  };
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+      
+      {/* 상단 헤더: 뒤로가기 누르면 카메라 화면으로 복귀 */}
       <NavHeader 
-        title="AI 분석 중" 
-        onBack={() => Alert.alert('알림', '나중에 이전 화면으로 돌아갈 거예요!')} // 임시 알림창
+        title="분석 실패" 
+        onBack={() => navigation.goBack()} 
       />
 
       <View style={styles.main}>
+        {/* 카메라/갤러리 아이콘 칩 */}
         <SourceChip type={sourceType} />
 
+        {/* 엑스 표시가 있는 미리보기 컴포넌트 */}
         <FailPhotoPreview />
 
         <View style={styles.textContainer}>
@@ -40,16 +60,11 @@ export default function AnalyzeFailScreen() {
         </View>
 
         <View style={styles.btnWrap}>
+          {/* 다시 시도 버튼 */}
           <TouchableOpacity 
             activeOpacity={0.8} 
             style={styles.btnPrimary} 
-            onPress={() => {
-              if (isCamera) {
-                Alert.alert("다시 찍기", "카메라 화면으로 돌아갑니다.");
-              } else {
-                Alert.alert("다시 고르기", "갤러리를 다시 엽니다.");
-              }
-            }}
+            onPress={handleRetry}
           >
             <Ionicons name={isCamera ? "refresh" : "image-outline"} size={20} color="#FFFFFF" />
             <Text style={styles.btnPrimaryText}>
@@ -57,10 +72,11 @@ export default function AnalyzeFailScreen() {
             </Text>
           </TouchableOpacity>
           
+          {/* 직접 검색 버튼 */}
           <TouchableOpacity 
             activeOpacity={0.6} 
             style={styles.btnOutlined} 
-            onPress={() => Alert.alert('직접 검색', '검색 화면으로 이동합니다.')}
+            onPress={handleSearchManually}
           >
             <Text style={styles.btnOutlinedText}>직접 검색할게요</Text>
           </TouchableOpacity>
@@ -70,16 +86,58 @@ export default function AnalyzeFailScreen() {
   );
 }
 
-// ... 아래 styles 코드는 아까와 완전 동일합니다! ...
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F6F6F6' },
-  main: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 80, gap: 36 },
+  main: { 
+    flex: 1, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingHorizontal: 24, 
+    paddingBottom: 80, 
+    gap: 36 
+  },
   textContainer: { alignItems: 'center', gap: 14 },
-  title: { fontSize: 24, fontWeight: '700', color: '#111111', lineHeight: 32, letterSpacing: -0.3, textAlign: 'center' },
-  desc: { fontSize: 14, fontWeight: '400', color: '#999999', lineHeight: 22, textAlign: 'center' },
+  title: { 
+    fontSize: 24, 
+    fontWeight: '700', 
+    color: '#111111', 
+    lineHeight: 32, 
+    letterSpacing: -0.3, 
+    textAlign: 'center' 
+  },
+  desc: { 
+    fontSize: 14, 
+    fontWeight: '400', 
+    color: '#999999', 
+    lineHeight: 22, 
+    textAlign: 'center' 
+  },
   btnWrap: { width: '100%', gap: 10, marginTop: 10 },
-  btnPrimary: { width: '100%', height: 52, borderRadius: 9999, backgroundColor: '#8B2E3A', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, elevation: 4, shadowColor: '#8B2E3A', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16 },
+  btnPrimary: { 
+    width: '100%', 
+    height: 52, 
+    borderRadius: 9999, 
+    backgroundColor: '#8B2E3A', 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 8, 
+    elevation: 4, 
+    shadowColor: '#8B2E3A', 
+    shadowOffset: { width: 0, height: 8 }, 
+    shadowOpacity: 0.25, 
+    shadowRadius: 16 
+  },
   btnPrimaryText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  btnOutlined: { width: '100%', height: 48, borderRadius: 9999, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  btnOutlined: { 
+    width: '100%', 
+    height: 48, 
+    borderRadius: 9999, 
+    borderWidth: 1.5, 
+    borderColor: '#E5E7EB', 
+    backgroundColor: 'transparent', 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
   btnOutlinedText: { fontSize: 14, fontWeight: '500', color: '#999999' },
 });

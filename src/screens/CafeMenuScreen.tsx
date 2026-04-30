@@ -1,6 +1,6 @@
 // src/screens/CafeDetailScreen.tsx
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants';
 
@@ -14,6 +14,12 @@ import CafeMenuList from '../components/CafeMenuList';
 
 export default function CafeDetailScreen({ navigation }: any) {
   const [isFavorite, setIsFavorite] = useState(false);
+  
+  // 🌟 1. 현재 선택된 탭 상태 (기본값 '메뉴')
+  const [currentTab, setCurrentTab] = useState('메뉴');
+  
+  // 🌟 2. 선택된 메뉴 ID 상태 (CafeMenuList 에러 해결용)
+  const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
 
   const HeartButton = (
     <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
@@ -27,12 +33,11 @@ export default function CafeDetailScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      {/* ✨ 1. 상태바 스타일 적용: 배경 흰색, 글자 어둡게 */}
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <NavHeader 
         title="카페 상세 정보" 
-        onBack={() => console.log('뒤로가기')}
+        onBack={() => navigation.goBack()}
         rightAction={HeartButton}
       />
 
@@ -43,20 +48,40 @@ export default function CafeDetailScreen({ navigation }: any) {
       >
         <CafeHeroCard />
         
-        {/* 임시로 메뉴 탭 하이라이트 */}
-        <CafeTabBar activeTab="메뉴" />
+        {/* 🌟 3. 에러 해결: onTabChange 속성 연결 */}
+        <CafeTabBar 
+          activeTab={currentTab} 
+          onTabChange={(tab: string) => setCurrentTab(tab)} 
+        />
         
-        {/* 여기에 메뉴 리스트나 리뷰 리스트가 들어가면 됩니다 */}
-        <CafeMenuList />
+        {/* 🌟 4. 에러 해결: selectedId, onSelect 속성 연결 및 탭 분기 처리 */}
+        {currentTab === '메뉴' ? (
+          <CafeMenuList 
+            selectedId={selectedMenuId} 
+            onSelect={(id: string) => setSelectedMenuId(id)} 
+          />
+        ) : (
+          <View style={styles.emptyTab}>
+            <Text style={{ color: Colors.text2 }}>{currentTab} 정보가 준비 중입니다.</Text>
+          </View>
+        )}
       </ScrollView>
 
-      {/* ✨ 2. 배경 날리고 위로 올린 플로팅 버튼 */}
-      <BottomCtaBar 
-        title="선택한 메뉴 기록하기" 
-        onPress={() => console.log('기록하기 클릭')}
-      />
+      {/* 🌟 5. 로직 추가: '메뉴' 탭일 때만 기록하기 버튼 표시 */}
+      {currentTab === '메뉴' && (
+        <BottomCtaBar 
+          title="선택한 메뉴 기록하기" 
+          onPress={() => {
+            if (selectedMenuId) {
+              console.log('기록하기 클릭:', selectedMenuId);
+              // 여기에 기록 로직 추가
+            } else {
+              alert('메뉴를 먼저 선택해주세요!');
+            }
+          }}
+        />
+      )}
 
-      {/* 바텀 네비게이션 */}
       <BottomNavBar activeTab="지도" />
     </View>
   );
@@ -73,7 +98,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     gap: 24,
-    // ✨ 하단 스크롤 여백: CTA 버튼과 바텀 네비게이션에 내용이 가려지지 않게 넉넉히 줍니다.
     paddingBottom: 180, 
   },
+  emptyTab: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
 });

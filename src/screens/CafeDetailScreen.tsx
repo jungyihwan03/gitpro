@@ -18,7 +18,7 @@ export default function CafeDetailScreen() {
   const navigation = useNavigation<any>();
   const [isFavorite, setIsFavorite] = useState(false);
   
-  // 🌟 상태 관리: 현재 탭과 선택된 메뉴 ID
+  // 🌟 상태 관리: 현재 탭(기본값 '홈')과 선택된 메뉴 ID
   const [activeTab, setActiveTab] = useState('홈');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -57,14 +57,21 @@ export default function CafeDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* 카페 공통 상단 정보 */}
         <CafeHeroCard />
         
+        {/* 탭바: 클릭 시 activeTab 상태를 변경함 */}
         <CafeTabBar 
           activeTab={activeTab} 
-          onTabChange={(tabName) => setActiveTab(tabName)} 
+          onTabChange={(tabName) => {
+            console.log("현재 활성화된 탭:", tabName);
+            setActiveTab(tabName);
+          }} 
         />
         
-        {/* ── 탭별 컨텐츠 ── */}
+        {/* ── 탭별 컨텐츠 분기 ── */}
+        
+        {/* [홈 탭] 사진 갤러리와 상세 정보 표시 */}
         {activeTab === '홈' && (
           <>
             <CafePhotoGallery />
@@ -72,22 +79,27 @@ export default function CafeDetailScreen() {
           </>
         )}
 
+        {/* [메뉴 탭] 메뉴 리스트 표시 */}
         {activeTab === '메뉴' && (
           <CafeMenuList 
             selectedId={selectedId} 
-            onSelect={(id) => setSelectedId(id)} // 🌟 에러 해결: 함수를 정확히 전달
+            onSelect={(id) => setSelectedId(id)} 
           />
         )}
 
-        {/* 리뷰/기록은 추후 구현 영역 */}
+        {/* 리뷰/기록 탭의 경우 필요 시 여기에 추가 */}
+        
       </ScrollView>
 
-      {/* 하단 기록하기 버튼 (메뉴 탭일 때 강조) */}
-      <BottomCtaBar 
-        title="선택한 메뉴 기록하기" 
-        onPress={handleRecord}
-      />
+      {/* 🌟 [핵심 로직] activeTab이 정확히 '메뉴'일 때만 하단 기록하기 버튼을 렌더링함 */}
+      {activeTab === '메뉴' && (
+        <BottomCtaBar 
+          title="선택한 메뉴 기록하기" 
+          onPress={handleRecord}
+        />
+      )}
 
+      {/* 하단 네비게이션 바 */}
       <BottomNavBar activeTab="지도" />
     </View>
   );
@@ -99,6 +111,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     gap: 24,
+    // 하단바와 버튼에 가려지지 않도록 넉넉한 여백 부여
     paddingBottom: 180, 
   },
 });
