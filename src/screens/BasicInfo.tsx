@@ -119,7 +119,7 @@ export const BasicInfo = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <View style={styles.safeArea}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.headerBlock}>
@@ -232,7 +232,7 @@ export const BasicInfo = () => {
           onPress={handleSaveAndNext} 
         />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
