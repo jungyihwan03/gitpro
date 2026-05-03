@@ -25,7 +25,7 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
       
       <View style={styles.navBarBg}>
         
-        {/* 🏠 홈 탭: 🌟 현재 유저 정보(route.params)를 다시 넘겨주어 닉네임을 보존합니다. */}
+        {/* 🏠 홈 탭 */}
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.6}
@@ -51,10 +51,11 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
 
         <View style={styles.fabSpace} />
 
+        {/* 📊 분석 탭: 🌟 페이지 이동 대신 showAlert를 호출하도록 수정! */}
         <TouchableOpacity 
           style={styles.navItem} 
           activeOpacity={0.6}
-          onPress={() => navigation.navigate('MenuScannerCamera')} 
+          onPress={() => showAlert('분석')} 
         >
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z" fill={activeTab === '분석' ? Colors.primary : Colors.text2} />
@@ -62,6 +63,7 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
           <Text style={[styles.navLabel, activeTab === '분석' && styles.activeLabel]}>분석</Text>
         </TouchableOpacity>
 
+        {/* ⚙️ 설정 탭 */}
         <TouchableOpacity 
           style={[styles.navItem]} 
           activeOpacity={0.6}
@@ -86,6 +88,7 @@ export default function BottomNavBar({ activeTab }: BottomNavBarProps) {
   );
 }
 
+// ... styles는 동일
 const styles = StyleSheet.create({
   container: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

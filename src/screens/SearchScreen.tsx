@@ -1,103 +1,225 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  ActivityIndicator,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import Svg, { Path } from 'react-native-svg';
-import { Colors } from '../constants';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { Colors, Layout } from '../constants';
 
-// 분리한 컴포넌트 임포트
 import NavHeader from '../components/NavHeader';
 import SearchBar from '../components/SearchBar';
 import FilterChip from '../components/FilterChip';
 import MenuCard from '../components/MenuCard';
 
-export default function SearchScreen() {
-  const [selectedBrand, setSelectedBrand] = useState('프랜차이즈');
-  const [selectedCategory, setSelectedCategory] = useState('');
+// 🌟 커피 데이터 타입 정의 (인덱스 시그니처 추가로 never 에러 완벽 방지)
+interface CoffeeItem {
+  _id: string;
+  coffeeName: string;
+  brand: string;
+  category: string;
+  calories: number;
+  protein: number;
+  caffeine: number;
+  emoji?: string;
+  [key: string]: string | number | undefined; // 🌟 동적 키 접근을 위한 타입 정의
+}
 
-  const brands = ['프랜차이즈', '편의점', '믹스커피', '개인카페'];
-  const categories = ['커피', '논커피', '스무디/프라푸치노', '티(Tea)', '베이커리/디저트'];
+export default function SearchScreen() {
+  const navigation = useNavigation<any>(); 
+  const route = useRoute<any>();
+
+  const params = route.params || {};
+  const userData = params.user || params; 
+
+  const [loading, setLoading] = useState(true);
+  
+  // 🌟 핵심 해결: 빈 배열 [] 만 넣으면 never[]로 추론되므로 타입을 명시함
+  const [rawListData, setRawListData] = useState<CoffeeItem[]>([]); 
+  const [filteredData, setFilteredData] = useState<CoffeeItem[]>([]); 
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [displayNutrient, setDisplayNutrient] = useState('calories');
+
+  const brands = ['스타벅스', '메가커피', '투썸플레이스', '빽다방', '편의점'];
+  const categories = ['카페', '편의점', '믹스'];
+  const nutrientTabs = [
+    { label: '칼로리', value: 'calories', unit: 'kcal' },
+    { label: '단백질', value: 'protein', unit: 'g' },
+    { label: '카페인', value: 'caffeine', unit: 'mg' },
+  ];
+
+  // 서버에서 커피 리스트 불러오기
+  const fetchCoffeeList = async () => {
+    try {
+      setLoading(true);
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+      // URL 끝에 /가 중복되지 않도록 처리
+      const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+      const response = await fetch(`${cleanUrl}/api/coffee/list`); 
+      
+      const data = await response.json();
+      const list = Array.isArray(data) ? data : [];
+      
+      setRawListData(list);
+      setFilteredData(list);
+    } catch (error) {
+      console.error("❌ 데이터 로딩 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCoffeeList();
+  }, []);
+
+  // 검색 및 필터링 로직 (성능을 위해 useMemo를 사용할 수도 있지만 useEffect로도 충분)
+  useEffect(() => {
+    if (!rawListData) return;
+
+    let result = [...rawListData];
+
+    // 검색어 필터링 (공백 제거 후 비교)
+    if (searchQuery) {
+      const target = searchQuery.replace(/\s+/g, '').toLowerCase();
+      result = result.filter(item => 
+        item.coffeeName?.replace(/\s+/g, '').toLowerCase().includes(target)
+      );
+    }
+
+    // 브랜드 필터링
+    if (selectedBrand) {
+      result = result.filter(item => item.brand === selectedBrand);
+    }
+
+    // 카테고리 필터링
+    if (selectedCategory) {
+      result = result.filter(item => item.category === selectedCategory);
+    }
+
+    setFilteredData(result);
+  }, [searchQuery, selectedBrand, selectedCategory, rawListData]);
+
+  const toggleBrand = (brand: string) => {
+    setSelectedBrand(prev => (prev === brand ? '' : brand));
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategory(prev => (prev === category ? '' : category));
+  };
+
+  const getMetaText = (item: CoffeeItem) => {
+    const activeTab = nutrientTabs.find(t => t.value === displayNutrient);
+    const value = item[displayNutrient] || 0;
+    return `${value} ${activeTab?.unit || ''}`;
+  };
 
   return (
     <View style={styles.safeArea}>
       <StatusBar style="dark" />
-      
       <View style={styles.container}>
         {/* 네비게이션 헤더 */}
-        <NavHeader title="메뉴 검색" onBack={() => console.log('뒤로가기')} />
+        <NavHeader title="메뉴 검색" onBack={() => navigation.goBack()} />
 
-        <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
-          {/* 1. 검색바 */}
-          <SearchBar placeholder="메뉴를 검색해보세요" />
+        <ScrollView 
+          contentContainerStyle={styles.scrollArea} 
+          showsVerticalScrollIndicator={false}
+        >
+          {/* 검색 바 */}
+          <SearchBar 
+            placeholder="메뉴를 검색해보세요" 
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
 
-          {/* 2. 브랜드 필터 */}
+          {/* 표시 정보 필터 (칼로리, 단백질, 카페인) */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterTitle}>표시 정보</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+              {nutrientTabs.map((tab) => (
+                <FilterChip 
+                  key={tab.value} 
+                  label={tab.label} 
+                  isSelected={displayNutrient === tab.value} 
+                  onPress={() => setDisplayNutrient(tab.value)} 
+                />
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* 브랜드 필터 */}
           <View style={styles.filterSection}>
             <View style={styles.filterHeader}>
               <Text style={styles.filterTitle}>브랜드</Text>
-              <TouchableOpacity activeOpacity={0.6}>
-                <Text style={styles.textBtn}>전체보기</Text>
+              <TouchableOpacity onPress={() => setSelectedBrand('')}>
+                <Text style={styles.resetBtn}>초기화</Text>
               </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {brands.map((item) => (
+              {brands.map((brand) => (
                 <FilterChip 
-                  key={item} 
-                  label={item} 
-                  isSelected={selectedBrand === item} 
-                  onPress={() => setSelectedBrand(item)} 
+                  key={brand} 
+                  label={brand} 
+                  isSelected={selectedBrand === brand} 
+                  onPress={() => toggleBrand(brand)} 
                 />
               ))}
             </ScrollView>
           </View>
 
-          {/* 3. 카테고리 필터 */}
+          {/* 카테고리 필터 */}
           <View style={styles.filterSection}>
             <View style={styles.filterHeader}>
               <Text style={styles.filterTitle}>카테고리</Text>
+              <TouchableOpacity onPress={() => setSelectedCategory('')}>
+                <Text style={styles.resetBtn}>초기화</Text>
+              </TouchableOpacity>
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {categories.map((item) => (
+              {categories.map((cat) => (
                 <FilterChip 
-                  key={item} 
-                  label={item} 
-                  isSelected={selectedCategory === item} 
-                  onPress={() => setSelectedCategory(item)} 
+                  key={cat} 
+                  label={cat} 
+                  isSelected={selectedCategory === cat} 
+                  onPress={() => toggleCategory(cat)} 
                 />
               ))}
             </ScrollView>
           </View>
 
-          {/* 4. 즐겨찾는 메뉴 */}
-          <View style={styles.favSection}>
-            <View style={styles.favHeader}>
-              <Svg width="20" height="22" viewBox="0 -2 22 22" fill="none">
-                <Path d="M11 18.5S1 12 1 5.5A5 5 0 0111 3a5 5 0 0110 2.5C21 12 11 18.5 11 18.5z" fill={Colors.error} />
-              </Svg>
-              <Text style={styles.favTitle}>즐겨찾는 메뉴</Text>
-            </View>
-
-            {/* 카드 목록 */}
-            <MenuCard 
-              imgEmoji="☕" 
-              brand="스타벅스" 
-              name="아이스 아메리카노 (Grande)" 
-              kcal="15 kcal" 
-              initialFav={true} 
-            />
-            <MenuCard 
-              imgEmoji="🍵" 
-              brand="메가커피" 
-              name="제주 말차 라떼" 
-              kcal="280 kcal" 
-              initialFav={true} 
-            />
-            <MenuCard 
-              imgEmoji="🍓" 
-              brand="투썸플레이스" 
-              name="스트로베리 피치 프라페" 
-              kcal="320 kcal" 
-              initialFav={false} 
-            />
+          {/* 검색 결과 리스트 */}
+          <View style={styles.listSection}>
+            <Text style={styles.listTitle}>검색 결과 ({filteredData?.length || 0})</Text>
+            {loading ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+            ) : (
+              filteredData && filteredData.length > 0 ? (
+                filteredData.map((item) => (
+                  <MenuCard 
+                    key={item._id}
+                    imgEmoji={item.emoji || "☕"} 
+                    brand={item.brand} 
+                    name={item.coffeeName} 
+                    kcal={getMetaText(item)} 
+                    onPress={() => {
+                      // 상세 페이지 이동 시 유저 정보를 안전하게 전달
+                      navigation.navigate('MenuDetail', { item, user: userData });
+                    }}
+                  />
+                ))
+              ) : (
+                <View style={styles.emptyWrap}>
+                  <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
+                </View>
+              )
+            )}
           </View>
         </ScrollView>
       </View>
@@ -106,59 +228,22 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.surface, // 상태바 영역 배경색을 흰색으로 통일
+  safeArea: { flex: 1, backgroundColor: Colors.surface },
+  container: { flex: 1, backgroundColor: Colors.bg },
+  scrollArea: { 
+    flexGrow: 1, 
+    paddingHorizontal: 24, 
+    paddingTop: 24, 
+    paddingBottom: 80, 
+    gap: 28 
   },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.bg, // 메인 화면 배경색
-  },
-  scrollArea: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  filterSection: {
-    flexDirection: 'column',
-    gap: 12,
-  },
-  filterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  filterTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text1,
-    lineHeight: 28,
-  },
-  textBtn: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.primary,
-    lineHeight: 20,
-  },
-  chipRow: {
-    gap: 8,
-    paddingRight: 24, // 스크롤 끝 여백
-  },
-  favSection: {
-    flexDirection: 'column',
-    gap: 16,
-  },
-  favHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  favTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text1,
-    lineHeight: 28,
-  },
+  filterSection: { gap: 12 },
+  filterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  filterTitle: { fontSize: 16, fontWeight: '700', color: Colors.text1 },
+  resetBtn: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  chipRow: { flexDirection: 'row', gap: 8 },
+  listSection: { gap: 16 },
+  listTitle: { fontSize: 18, fontWeight: '700', color: Colors.text1 },
+  emptyWrap: { alignItems: 'center', marginTop: 60, paddingBottom: 40 },
+  emptyText: { color: Colors.text3, fontSize: 14 },
 });

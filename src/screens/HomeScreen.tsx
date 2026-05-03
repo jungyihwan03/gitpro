@@ -1,8 +1,19 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, BackHandler, ToastAndroid, Platform } from 'react-native';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  BackHandler, 
+  ToastAndroid, 
+  Platform,
+  ActivityIndicator,
+  RefreshControl
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar'; 
-import Svg, { Circle as SvgCircle, Path } from 'react-native-svg';
-import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native'; 
+import Svg, { Circle as SvgCircle } from 'react-native-svg';
+import { useRoute, useNavigation, useIsFocused, useFocusEffect } from '@react-navigation/native'; 
 
 import { Colors, Layout } from '../constants';
 import AppBar from '../components/AppBar';
@@ -19,18 +30,80 @@ export default function HomeScreen() {
   const isFocused = useIsFocused();
   const lastBackPressed = useRef<number>(0);
 
-  // 🌟 [최종 해결] 닉네임을 찾는 모든 경로를 탐색합니다.
+  // 1. 상태 관리
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [stats, setStats] = useState({ caffeine: 0, calories: 0, protein: 0 });
+  const [timeline, setTimeline] = useState([]);
+
+  // 2. 유저 정보 추출 (params 구조에 따라 안전하게 접근)
   const params = route.params || {};
-  const userName = 
-    params.name || 
-    params.user?.name || 
-    params.params?.name || 
-    params.params?.user?.name || 
-    '회원';
+  const userData = params.user || params.params?.user || params;
+  const userName = userData.name || '회원';
+  const userId = userData._id; 
 
-  const { openRecordSheet } = useBottomSheetStore();
+  // 권장량 계산 로직
+  const weight = Number(userData.weight || 0);
+  const height = Number(userData.height || 0);
+  const age = Number(userData.age || 0);
+  const gender = userData.gender;
 
-  // 안드로이드 뒤로가기 종료 로직
+  let recommendedKcal = 2000; 
+  if (weight > 0 && height > 0 && age > 0) {
+    if (gender === 'M' || gender === 'male') {
+      recommendedKcal = Math.round(((10 * weight) + (6.25 * height) - (5 * age) + 5) * 1.3);
+    } else {
+      recommendedKcal = Math.round(((10 * weight) + (6.25 * height) - (5 * age) - 161) * 1.3);
+    }
+  }
+
+  // 3. 데이터 가져오기 (무한 로딩 방지 로직 적용)
+  const fetchTodayData = async () => {
+    // 🌟 userId가 없으면 로딩을 끄고 중단 (에러 방지)
+    if (!userId) {
+      console.log("❌ 유저 ID를 찾을 수 없어 데이터를 불러오지 못합니다.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+      const response = await fetch(`${backendUrl}/api/intake/today/${userId}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setStats(data.totals || { caffeine: 0, calories: 0, protein: 0 });
+        setTimeline(data.timeline || []);
+      }
+    } catch (error) {
+      console.error("📡 데이터 로딩 실패:", error);
+    } finally {
+      // 🌟 성공하든 실패하든 로딩 스피너는 반드시 멈춥니다.
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // 화면이 보일 때마다 실행
+  useFocusEffect(
+    useCallback(() => {
+      fetchTodayData();
+    }, [userId])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTodayData();
+  };
+
+  // 4. 차트 수치 계산
+  const currentKcal = stats.calories;
+  const circleCircumference = 2 * Math.PI * 72;
+  let progressPercent = currentKcal / recommendedKcal; 
+  if (progressPercent > 1) progressPercent = 1; 
+  const strokeDashoffset = circleCircumference * (1 - progressPercent);
+
+  // 안드로이드 뒤로가기
   useEffect(() => {
     const backAction = () => {
       if (isFocused) {
@@ -51,37 +124,19 @@ export default function HomeScreen() {
     return () => backHandler.remove();
   }, [isFocused]);
 
-  // 권장 칼로리 계산을 위한 유저 데이터 추출
-  const userData = params.user || params || {};
-  const weight = Number(userData.weight || 0);
-  const height = Number(userData.height || 0);
-  const age = Number(userData.age || 0);
-  const gender = userData.gender;
-
-  let recommendedKcal = 2000; 
-  if (weight > 0 && height > 0 && age > 0) {
-    if (gender === 'M' || gender === 'male') {
-      recommendedKcal = Math.round(((10 * weight) + (6.25 * height) - (5 * age) + 5) * 1.3);
-    } else {
-      recommendedKcal = Math.round(((10 * weight) + (6.25 * height) - (5 * age) - 161) * 1.3);
-    }
-  }
-
-  const currentKcal = 1000; 
-  const circleCircumference = 2 * Math.PI * 72;
-  let progressPercent = currentKcal / recommendedKcal; 
-  if (progressPercent > 1) progressPercent = 1; 
-  const strokeDashoffset = circleCircumference * (1 - progressPercent);
-
+  const { openRecordSheet } = useBottomSheetStore();
   const CustomAppBar = AppBar as any;
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      {/* 🌟 최종 확인된 userName을 AppBar에 전달 */}
       <CustomAppBar userName={userName} />
 
-      <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollArea} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>오늘의 섭취 현황</Text>
           <View style={styles.chartArea}>
@@ -111,14 +166,14 @@ export default function HomeScreen() {
           <View style={styles.nutrients}>
             <View style={styles.nutrientItem}>
               <View style={[styles.nDot, { backgroundColor: Colors.warning }]} />
-              <Text style={styles.nLabel}>당류</Text>
-              <Text style={styles.nVal}>25g</Text>
-              <Text style={styles.nTotal}>/ 50g</Text>
+              <Text style={styles.nLabel}>카페인</Text>
+              <Text style={styles.nVal}>{stats.caffeine}mg</Text>
+              <Text style={styles.nTotal}>/ 400mg</Text>
             </View>
             <View style={styles.nutrientItem}>
               <View style={[styles.nDot, { backgroundColor: Colors.primary, opacity: 0.5 }]} />
               <Text style={styles.nLabel}>단백질</Text>
-              <Text style={styles.nVal}>40g</Text>
+              <Text style={styles.nVal}>{stats.protein}g</Text>
               <Text style={styles.nTotal}>/ 60g</Text>
             </View>
           </View>
@@ -130,8 +185,8 @@ export default function HomeScreen() {
         </View>
 
         <AlertCard 
-          title="주의 알림" 
-          bodyMain="권장 섭취량의" 
+          title="섭취 알림" 
+          bodyMain="권장 칼로리의" 
           highlightText={`${Math.round(progressPercent * 100)}%`} 
           bodySub="를 도달했습니다." 
         />
@@ -143,9 +198,26 @@ export default function HomeScreen() {
               <Text style={{ color: Colors.primary, fontWeight: '500' }}>전체 보기</Text>
             </TouchableOpacity>
           </View>
+          
           <View style={styles.timelineList}>
-            <TimelineItem name="아메리카노" time="오전 09:30" kcal="120kcal" />
-            <TimelineItem name="아이스 카페 라떼" time="오후 02:40" kcal="150kcal" isLast={true} />
+            {loading ? (
+              // 🌟 무한 로딩이 일어나는 지점
+              <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
+            ) : timeline && timeline.length > 0 ? (
+              timeline.slice(0, 5).map((log: any, index: number) => (
+                <TimelineItem 
+                  key={log._id}
+                  name={log.coffeeName} 
+                  time={new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
+                  kcal={`${log.calories}kcal`} 
+                  isLast={index === timeline.length - 1 || index === 4}
+                />
+              ))
+            ) : (
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyText}>오늘 섭취한 기록이 없습니다.</Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -178,4 +250,6 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.text1, lineHeight: 28 },
   timelineList: { gap: 0 },
+  emptyWrap: { paddingVertical: 40, alignItems: 'center' },
+  emptyText: { color: Colors.text3, fontSize: 14 },
 });

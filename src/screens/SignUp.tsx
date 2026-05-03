@@ -96,9 +96,12 @@ export const SignUp = () => {
 
       if (response.ok) {
         Alert.alert('가입 성공! 🎉', '추가 신체 정보를 입력해 주세요.');
+        
+        // 🌟 [수정] 서버가 수정(Update) 시 사용하는 '_id'를 반드시 포함해서 보냅니다.
         navigation.navigate('BasicInfo', { 
-          userId: data.user.userId,
-          name: data.user.name 
+          _id: data.user._id,        // 👈 추가: 몽고DB 내부 ID
+          userId: data.user.userId,  // 사용자가 입력한 ID
+          name: data.user.name       // 이름
         });
       } else {
         Alert.alert('가입 실패', data.error || '회원가입 중 오류가 발생했습니다.');

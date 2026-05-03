@@ -1,3 +1,4 @@
+// src/screens/Login.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +25,25 @@ export const Login = () => {
     });
   }, []);
 
-  // 일반 로그인 핸들러
+  // 🌟 공통 네비게이션 로직 (수정됨)
+  const navigateAfterLogin = (user: any) => {
+    if (user.gender && user.age) { // 또는 user.isBasicInfoCompleted 등 기존 로직 활용
+      // 이미 입력 완료했다면 홈으로 직행
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs', params: { user } }],
+      });
+    } else {
+      // 🌟 [중요] BasicInfo에서 받는 이름인 '_id'로 넘겨줍니다.
+      navigation.navigate('BasicInfo', { 
+        _id: user._id, 
+        name: user.name,
+        providerId: user.providerId, // 구글 로그인의 경우 대비
+        userId: user.userId          // 일반 로그인의 경우 대비
+      });
+    }
+  };
+
   const handleLocalLogin = async () => {
     if (!userId || !password) {
       return Alert.alert('알림', '아이디와 비밀번호를 입력해 주세요.');
@@ -33,7 +52,7 @@ export const Login = () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    try {R
+    try {
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
       const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
@@ -43,14 +62,7 @@ export const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 성공 시 메인 탭으로 리셋 이동 (뒤로가기 방지)
-        navigation.reset({
-          index: 0,
-          routes: [{ 
-            name: 'MainTabs', 
-            params: { user: data.user } 
-          }],
-        });
+        navigateAfterLogin(data.user);
       } else {
         Alert.alert('로그인 실패', data.error || '아이디 또는 비밀번호를 확인해주세요.');
       }
@@ -61,7 +73,6 @@ export const Login = () => {
     }
   };
 
-  // 구글 로그인 핸들러
   const handleGoogleLogin = async () => {
     if (isLoading) return;
     setIsLoading(true);
@@ -90,11 +101,7 @@ export const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 소셜 로그인은 보통 최초 정보 기입이 필요하므로 BasicInfo로 이동
-        navigation.navigate('BasicInfo', { 
-          providerId: data.user.providerId, 
-          name: data.user.name 
-        });
+        navigateAfterLogin(data.user);
       } else {
         Alert.alert('로그인 실패', '서버와 연결할 수 없습니다.');
       }
@@ -112,7 +119,7 @@ export const Login = () => {
   const handleKakaoLogin = () => Alert.alert('카카오 로그인', '현재 준비 중입니다.');
 
   return (
-    <View style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.mainContent}>
@@ -160,7 +167,6 @@ export const Login = () => {
           </View>
           
           <View style={styles.socialBtns}>
-            {/* 구글 버튼 */}
             <TouchableOpacity style={styles.socialBtn} activeOpacity={isLoading ? 1 : 0.6} onPress={handleGoogleLogin}>
               <View style={[styles.socialIconCircle, { backgroundColor: Colors.google, opacity: isLoading ? 0.6 : 1 }]}>
                 <Svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -172,7 +178,6 @@ export const Login = () => {
               </View>
             </TouchableOpacity>
 
-            {/* 네이버 버튼 */}
             <TouchableOpacity style={styles.socialBtn} activeOpacity={isLoading ? 1 : 0.6} onPress={handleNaverLogin}>
               <View style={[styles.socialIconCircle, { backgroundColor: Colors.naver, borderColor: Colors.naver, opacity: isLoading ? 0.6 : 1 }]}>
                 <Svg width="16" height="16" viewBox="0 0 14 14" fill="none">
@@ -181,7 +186,6 @@ export const Login = () => {
               </View>
             </TouchableOpacity>
 
-            {/* 카카오 버튼 */}
             <TouchableOpacity style={styles.socialBtn} activeOpacity={isLoading ? 1 : 0.6} onPress={handleKakaoLogin}>
               <View style={[styles.socialIconCircle, { backgroundColor: Colors.kakao, borderColor: Colors.kakao, opacity: isLoading ? 0.6 : 1 }]}>
                 <Svg width="22" height="20" viewBox="0 0 20 18" fill="none">
@@ -199,9 +203,10 @@ export const Login = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.surface },

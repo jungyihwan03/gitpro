@@ -9,13 +9,25 @@ interface MenuCardProps {
   name: string;
   kcal: string;
   initialFav?: boolean;
+  onPress?: () => void; // 🌟 onPress 프롭 추가
 }
 
-export default function MenuCard({ imgEmoji, brand, name, kcal, initialFav = false }: MenuCardProps) {
+export default function MenuCard({ 
+  imgEmoji, 
+  brand, 
+  name, 
+  kcal, 
+  initialFav = false,
+  onPress // 🌟 추가
+}: MenuCardProps) {
   const [isFav, setIsFav] = useState(initialFav);
 
   return (
-    <TouchableOpacity activeOpacity={0.8} style={styles.menuCard}>
+    <TouchableOpacity 
+      activeOpacity={0.8} 
+      style={styles.menuCard} 
+      onPress={onPress} // 🌟 드디어 클릭 이벤트가 연결되었습니다!
+    >
       {/* 썸네일 */}
       <View style={styles.menuImg}>
         <Text style={styles.emoji}>{imgEmoji}</Text>
@@ -35,7 +47,10 @@ export default function MenuCard({ imgEmoji, brand, name, kcal, initialFav = fal
         <TouchableOpacity 
           activeOpacity={0.6} 
           style={styles.favBtn} 
-          onPress={() => setIsFav(!isFav)}
+          onPress={(e) => {
+            e.stopPropagation(); // 🌟 하트 클릭 시 상세페이지로 넘어가지 않게 방지
+            setIsFav(!isFav);
+          }}
         >
           <Svg width="22" height="22" viewBox="0 -2 22 22" fill="none">
             {isFav ? (
@@ -46,7 +61,11 @@ export default function MenuCard({ imgEmoji, brand, name, kcal, initialFav = fal
           </Svg>
         </TouchableOpacity>
         
-        <TouchableOpacity activeOpacity={0.6} style={styles.storeBtn}>
+        <TouchableOpacity 
+          activeOpacity={0.6} 
+          style={styles.storeBtn}
+          onPress={(e) => e.stopPropagation()} // 🌟 매장찾기 클릭 시 이동 방지
+        >
           <Svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <Path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill={Colors.text2} />
           </Svg>
