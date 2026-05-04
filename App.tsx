@@ -24,6 +24,7 @@ import Map from './src/screens/Map';
 import CafeDetailScreen from './src/screens/CafeDetailScreen';
 import CafeMenuScreen from './src/screens/CafeMenuScreen';
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 
