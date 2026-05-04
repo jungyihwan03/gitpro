@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { StatusBar } from 'expo-status-bar'
 import Svg, { Path } from 'react-native-svg';
 
+// 🌟 네비게이션 파라미터 수신을 위해 useRoute 추가
+import { useRoute } from '@react-navigation/native';
 import { Colors, Layout } from '../constants';
 import NavHeader from '../components/NavHeader';
 import BottomNavBar from '../components/BottomNavBar';
@@ -12,11 +14,16 @@ import { InputField } from '../components/SettingsScreen/InputField';
 import { SwitchItem } from '../components/SettingsScreen/SwitchItem';
 
 export const SettingsScreen = ({ navigation }: any) => {
+  const route = useRoute<any>();
+  
+  // 🌟 [핵심] 네비게이션 파라미터에서 유저 정보 추출
+  const userData = route.params?.user || route.params;
+
   // 스위치 상태 관리
   const [alertLimit, setAlertLimit] = useState(false);
   const [alertNight, setAlertNight] = useState(true);
 
-  // 뒤로가기 핸들러 (NavHeader 용)
+  // 뒤로가기 핸들러
   const handleBack = () => {
     if (navigation?.goBack) {
       navigation.goBack();
@@ -26,7 +33,11 @@ export const SettingsScreen = ({ navigation }: any) => {
   const handleLogout = () => {
     Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
       { text: '취소', style: 'cancel' },
-      { text: '확인', style: 'destructive' },
+      { 
+        text: '확인', 
+        style: 'destructive',
+        onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) 
+      },
     ]);
   };
 
@@ -46,23 +57,19 @@ export const SettingsScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.safeArea}>
+      <StatusBar style="dark" />
+      <NavHeader title="설정" onBack={handleBack} />
 
-        <StatusBar style="dark" />
-        {/* 1. 팀에서 구축한 공통 헤더 사용 */}
-        <NavHeader title="설정" onBack={handleBack} />
-
-        {/* 2. 스크롤 영역 */}
-        <ScrollView 
-            style={styles.scrollArea} 
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-        >
+      <ScrollView 
+        style={styles.scrollArea} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         
-        {/* ① 프로필 카드 */}
+        {/* ① 프로필 카드: 실제 유저 데이터 연동 */}
         <View style={[styles.card, styles.profileCard]}>
           <View style={styles.profileRow}>
             <View style={styles.avatarWrap}>
-              {/* constants.ts의 avatarBg, avatarIcon 활용 */}
               <View style={styles.avatar}>
                 <Svg width="32" height="32" viewBox="0 0 24 24">
                   <Path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill={Colors.avatarIcon} />
@@ -76,14 +83,19 @@ export const SettingsScreen = ({ navigation }: any) => {
             </View>
             
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>김카페</Text>
-              <Text style={styles.profileEmail}>kimcafe@example.com</Text>
+              {/* 🌟 유저 이름 및 이메일 반영 */}
+              <Text style={styles.profileName}>{userData?.name || '사용자'}</Text>
+              <Text style={styles.profileEmail}>{userData?.email || '이메일 정보 없음'}</Text>
             </View>
             
             <ChevronIcon />
           </View>
           
-          <TouchableOpacity activeOpacity={0.6} style={styles.profileLinkBtn}>
+          <TouchableOpacity 
+            activeOpacity={0.6} 
+            style={styles.profileLinkBtn}
+            onPress={() => navigation.navigate('UserInfoUpdate', { user: userData })}
+          >
             <Text style={styles.profileLinkText}>프로필 상세 보기</Text>
             <Svg width="16" height="16" viewBox="0 0 24 24">
               <Path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill={Colors.primary} />
@@ -124,7 +136,7 @@ export const SettingsScreen = ({ navigation }: any) => {
           />
         </View>
 
-        {/* ③ 신체 정보 섹션 */}
+        {/* ③ 신체 정보 섹션: 실제 데이터 연동 */}
         <SectionHeader 
           title="신체 정보" 
           icon={
@@ -137,10 +149,11 @@ export const SettingsScreen = ({ navigation }: any) => {
         
         <View style={styles.card}>
           <View style={styles.fieldsContainer}>
-            <InputField label="키" value="175" suffix="cm" editable={false} />
+            {/* 🌟 userData에 저장된 키, 몸무게, 나이 반영 */}
+            <InputField label="키" value={String(userData?.height || '-')} suffix="cm" editable={false} />
             <View style={styles.fieldsRow}>
-              <InputField label="몸무게" value="68" suffix="kg" editable={false} />
-              <InputField label="나이" value="28" suffix="세" editable={false} />
+              <InputField label="몸무게" value={String(userData?.weight || '-')} suffix="kg" editable={false} />
+              <InputField label="나이" value={String(userData?.age || '-')} suffix="세" editable={false} />
             </View>
           </View>
         </View>
@@ -202,7 +215,7 @@ export const SettingsScreen = ({ navigation }: any) => {
 
       </ScrollView>
 
-      {/* 3. 팀에서 구축한 공통 하단 네비게이션 사용 */}
+      {/* 하단 네비게이션 바 */}
       <BottomNavBar activeTab="설정" />
 
     </View>
@@ -210,151 +223,28 @@ export const SettingsScreen = ({ navigation }: any) => {
 };
 
 const styles = StyleSheet.create({
-  // 레이아웃 기본 설정
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.bg,
-  },
-  scrollArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 24,
-    gap: 24,
-    // BottomNavBar가 absolute로 떠있고 height가 100이므로 
-    // 콘텐츠가 가려지지 않도록 하단 여백을 충분히 줍니다.
-    paddingBottom: 130, 
-  },
-
-  // 카드 공통 스타일 (팀에서 정의한 Layout 객체 사용)
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLg, // 24dp
-    padding: 24,
-    ...Layout.shadow1,             // elevation 및 그림자 공통 속성
-  },
-  listCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Layout.radiusLg,
-    overflow: 'hidden',
-    ...Layout.shadow1,
-  },
-
-  // 프로필 전용 스타일
-  profileCard: {
-    paddingTop: 20,
-    paddingBottom: 16,
-  },
-  profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 16,
-  },
-  avatarWrap: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: Layout.radiusFull, // 원형
-    backgroundColor: Colors.avatarBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarEdit: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 24,
-    height: 24,
-    borderRadius: Layout.radiusFull,
-    backgroundColor: Colors.primary,
-    borderWidth: 2,
-    borderColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.text1,
-    lineHeight: 22,
-  },
-  profileEmail: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.text2,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  profileLinkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 36,
-    gap: 4,
-    alignSelf: 'flex-start',
-  },
-  profileLinkText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-
-  // 텍스트 & 섹션 스타일
-  helperText: {
-    fontSize: 12,
-    fontWeight: '400',
-    color: Colors.text2,
-    lineHeight: 18,
-    marginTop: -8,
-    paddingHorizontal: 2,
-  },
-  versionText: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: Colors.text2,
-  },
-
-  // 폼 필드 레이아웃
-  fieldsContainer: {
-    flexDirection: 'column',
-    gap: 16,
-  },
-  fieldsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-
-  // 하단 액션 버튼
-  actionSection: {
-    alignItems: 'center',
-    gap: 4,
-    paddingBottom: 8,
-  },
-  logoutBtn: {
-    height: 44,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: Colors.text2,
-  },
-  withdrawBtn: {
-    height: 44,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  withdrawText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.error,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.bg },
+  scrollArea: { flex: 1 },
+  scrollContent: { padding: 24, gap: 24, paddingBottom: 130 },
+  card: { backgroundColor: Colors.surface, borderRadius: Layout.radiusLg, padding: 24, ...Layout.shadow1 },
+  listCard: { backgroundColor: Colors.surface, borderRadius: Layout.radiusLg, overflow: 'hidden', ...Layout.shadow1 },
+  profileCard: { paddingTop: 20, paddingBottom: 16 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+  avatarWrap: { position: 'relative' },
+  avatar: { width: 56, height: 56, borderRadius: Layout.radiusFull, backgroundColor: Colors.avatarBg, alignItems: 'center', justifyContent: 'center' },
+  avatarEdit: { position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: Layout.radiusFull, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.surface, alignItems: 'center', justifyContent: 'center' },
+  profileInfo: { flex: 1 },
+  profileName: { fontSize: 15, fontWeight: '700', color: Colors.text1, lineHeight: 22 },
+  profileEmail: { fontSize: 12, fontWeight: '400', color: Colors.text2, lineHeight: 18, marginTop: 2 },
+  profileLinkBtn: { flexDirection: 'row', alignItems: 'center', height: 36, gap: 4, alignSelf: 'flex-start' },
+  profileLinkText: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  helperText: { fontSize: 12, fontWeight: '400', color: Colors.text2, lineHeight: 18, marginTop: -8, paddingHorizontal: 2 },
+  versionText: { fontSize: 13, fontWeight: '400', color: Colors.text2 },
+  fieldsContainer: { flexDirection: 'column', gap: 16 },
+  fieldsRow: { flexDirection: 'row', gap: 12 },
+  actionSection: { alignItems: 'center', gap: 4, paddingBottom: 8 },
+  logoutBtn: { height: 44, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center' },
+  logoutText: { fontSize: 14, fontWeight: '500', color: Colors.text2 },
+  withdrawBtn: { height: 44, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center' },
+  withdrawText: { fontSize: 14, fontWeight: '700', color: Colors.error },
 });

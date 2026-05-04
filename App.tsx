@@ -53,6 +53,8 @@ function MainAppStack({ route }: any) {
         <Stack.Screen name="Analyze" component={AnalyzeScreen} />
         <Stack.Screen name="AnalyzeFail" component={AnalyzeFailScreen} />
         <Stack.Screen name="AnalyzeResult" component={AnalyzeResultScreen} />
+        <Stack.Screen name="Statistics" component={StatisticsScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
       </Stack.Navigator>
     </SafeAreaView>
   );
