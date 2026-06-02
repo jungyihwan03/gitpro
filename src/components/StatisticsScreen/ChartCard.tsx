@@ -1,28 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors, Layout } from '../../constants';
 
-export const ChartCard = () => {
-  const [activeChip, setActiveChip] = useState('칼로리');
-  const chips = ['칼로리', '당', '단백질'];
-  
-  const chartData = [
-    { time: '08', val: '120', height: 64, active: false },
-    { time: '10', val: '240', height: 96, active: false },
-    { time: '12', val: '350', height: 128, active: false },
-    { time: '14', val: '520', height: 176, active: true },
-    { time: '16', val: '180', height: 80, active: false },
-    { time: '18', val: '90', height: 48, active: false },
-    { time: '20', val: '45', height: 32, active: false },
-  ];
+interface ChartDataItem {
+  time: string;
+  val: number;
+  height: number;
+  active: boolean;
+}
 
+interface ChartCardProps {
+  data: ChartDataItem[];
+  chips: string[];
+  activeChip: string;
+  onChipChange: (chip: string) => void;
+}
+
+export const ChartCard = ({ data, chips, activeChip, onChipChange }: ChartCardProps) => {
   return (
     <View style={styles.chartCard}>
       <View style={styles.chartHeaderRow}>
-        <Text style={styles.chartTitle}>시간별 영양소 분석</Text>
-        <TouchableOpacity activeOpacity={0.6} style={styles.btnAvgCompare}>
-          <Text style={styles.btnAvgCompareText}>평균과 비교</Text>
-        </TouchableOpacity>
+        <Text style={styles.chartTitle}>시간별 {activeChip} 분석</Text>
       </View>
 
       <View style={styles.chipRow}>
@@ -33,7 +31,7 @@ export const ChartCard = () => {
               key={chip} 
               activeOpacity={0.6}
               style={[styles.chip, isActive && styles.chipActive]}
-              onPress={() => setActiveChip(chip)}
+              onPress={() => onChipChange(chip)}
             >
               <Text style={[styles.chipText, isActive && styles.chipTextActive]}>{chip}</Text>
             </TouchableOpacity>
@@ -42,18 +40,22 @@ export const ChartCard = () => {
       </View>
 
       <View style={styles.chartArea}>
-        <View style={styles.chartGuidelines}>
-          <View style={styles.guideline} />
-          <View style={styles.guideline} />
-          <View style={styles.guideline} />
-          <View style={styles.guideline} />
-        </View>
+        {data.length <= 6 ? (
+          <View style={styles.chartGuidelines}>
+            <View style={styles.guideline} />
+            <View style={styles.guideline} />
+            <View style={styles.guideline} />
+            <View style={styles.guideline} />
+          </View>
+        ) : null}
         
-        {chartData.map((item, index) => (
+        {data.map((item, index) => (
           <View key={index} style={styles.barCol}>
-            <Text style={[styles.barVal, item.active && styles.barValActive]}>{item.val}</Text>
+            <Text style={[styles.barVal, item.active && styles.barValActive]}>
+              {item.val > 0 ? item.val : ''}
+            </Text>
             <View style={[styles.barBody, { height: item.height }, item.active && styles.barBodyActive]} />
-            <Text style={[styles.barLabel, item.active && styles.barLabelActive]}>{item.time}</Text>
+            <Text style={[styles.barLabel, item.active && styles.barLabelActive]}>{item.time}:00</Text>
           </View>
         ))}
       </View>
@@ -79,21 +81,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Colors.text1,
-  },
-  btnAvgCompare: {
-    height: 32,
-    paddingHorizontal: 14,
-    borderRadius: Layout.radiusFull,
-    borderWidth: 1,
-    borderColor: Colors.alertBorder,
-    backgroundColor: Colors.alertBg,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  btnAvgCompareText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: Colors.primary,
   },
   chipRow: {
     flexDirection: 'row',
@@ -158,13 +145,13 @@ const styles = StyleSheet.create({
   },
   barBody: {
     width: '100%',
-    backgroundColor: Colors.border, // 비활성 바
+    backgroundColor: Colors.border,
     borderTopLeftRadius: Layout.radiusSm,
     borderTopRightRadius: Layout.radiusSm,
   },
   barBodyActive: {
     backgroundColor: Colors.primary,
-    ...Layout.shadow2, // 강조 바의 그림자
+    ...Layout.shadow2,
   },
   barLabel: {
     fontSize: 12,

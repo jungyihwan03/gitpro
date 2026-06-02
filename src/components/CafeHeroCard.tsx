@@ -1,27 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Layout } from '../constants'; // 💡 경로를 맞춰주세요!
+import { Colors, Layout } from '../constants';
 
-export default function CafeHeroCard() {
+interface CafeInfo {
+  name: string;
+  vicinity: string;
+  rating?: number;
+  place_id: string;
+  geometry: { location: { lat: number; lng: number } };
+}
+
+interface CafeHeroCardProps {
+  cafe?: CafeInfo;
+  distance?: string;
+  phone?: string | null;
+}
+
+export default function CafeHeroCard({ cafe, distance, phone }: CafeHeroCardProps) {
   return (
     <View style={styles.card}>
-      {/* 태그 */}
       <View style={styles.tagRow}>
         <Text style={styles.tagChip}>개인 로스터리</Text>
-        <Text style={styles.tagChip}>250m</Text>
+        <Text style={styles.tagChip}>{distance || '(거리 없음)'}</Text>
       </View>
 
-      {/* 이름 */}
-      <Text style={styles.cafeName}>미드나잇 에스프레소</Text>
+      <Text style={styles.cafeName}>{cafe?.name || '(이름 없음)'}</Text>
 
-      {/* 메타 정보 */}
       <View style={styles.metaRow}>
         <Ionicons name="star" size={16} color="#F9A825" />
-        <Text style={styles.ratingScore}>4.8</Text>
+        <Text style={styles.ratingScore}>{cafe?.rating != null ? cafe.rating : '-'}</Text>
         <Text style={styles.ratingCount}>(128)</Text>
         <View style={styles.metaDot} />
-        <Text style={styles.metaText}>역삼동</Text>
+        <Text style={styles.metaText}>{cafe?.vicinity || '(주소 없음)'}</Text>
         <View style={styles.metaDot} />
         <View style={styles.closingBadge}>
           <Ionicons name="time" size={12} color={Colors.error} />
@@ -31,19 +42,25 @@ export default function CafeHeroCard() {
 
       {/* 액션 버튼들 */}
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => {
+          const name = cafe?.name;
+          if (name) Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(name)}`);
+        }}>
           <View style={[styles.actionIconWrap, styles.actionFilled]}>
             <Ionicons name="navigate" size={20} color={Colors.surface} />
           </View>
           <Text style={styles.actionLabel}>길 찾기</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => { if (phone) Linking.openURL('tel:' + phone); }}>
           <View style={[styles.actionIconWrap, styles.actionTonal]}>
             <Ionicons name="call" size={20} color={Colors.text2} />
           </View>
           <Text style={styles.actionLabel}>전화</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionItem}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => {
+          const name = cafe?.name;
+          if (name) Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`);
+        }}>
           <View style={[styles.actionIconWrap, styles.actionTonal]}>
             <Ionicons name="share-social" size={20} color={Colors.text2} />
           </View>

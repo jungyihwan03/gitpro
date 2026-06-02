@@ -17,14 +17,32 @@ export const getMapHtml = (lat: number, lng: number) => {
         <div id="map"></div>
         <script>
           let map;
-          let currentMarkers = []; 
+          let currentMarkers = [];
+          let allMarkers = [];
+          let allPlaces = [];
 
           const jsBrandStyles = ${brandStylesJson};
           const jsDefaultStyle = ${defaultStyleJson};
 
+          var CHOSUNG = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+          function getChosung(str) {
+            var result = '';
+            for (var i = 0; i < str.length; i++) {
+              var code = str.charCodeAt(i);
+              if (code >= 0xAC00 && code <= 0xD7A3) {
+                result += CHOSUNG[Math.floor((code - 0xAC00) / 588)];
+              } else {
+                result += str[i];
+              }
+            }
+            return result;
+          }
+
           function getBrandInfoJS(storeName) {
             const found = jsBrandStyles.find(brand => brand.keywords.some(keyword => storeName.includes(keyword)));
-            return found ? found : jsDefaultStyle;
+            if (found) return Object.assign({}, found, { isFranchise: true });
+            return Object.assign({}, jsDefaultStyle, { isFranchise: false });
           }
 
           function logToApp(type, payload) {
@@ -66,6 +84,34 @@ export const getMapHtml = (lat: number, lng: number) => {
             searchNearbyCafes(map, myLocation, 700); 
           }
 
+          var placeDetailsMap = {};
+
+          function fetchDetailsForPlaces(places) {
+            for (var i = 0; i < places.length; i++) {
+              (function(p) {
+                var detailService = new google.maps.places.PlacesService(map);
+                detailService.getDetails({ placeId: p.place_id, fields: ['opening_hours', 'photos', 'formatted_phone_number'] }, function(result, status) {
+                  if (status === google.maps.places.PlacesServiceStatus.OK && result) {
+                    var entry = {};
+                    if (result.opening_hours) {
+                      entry.open_now = result.opening_hours.open_now;
+                      entry.weekday_text = result.opening_hours.weekday_text;
+                    }
+                    if (result.photos && result.photos.length > 0) {
+                      entry.photo_url = result.photos[0].getUrl({ maxWidth: 200 });
+                    }
+                    if (result.formatted_phone_number) {
+                      entry.phone = result.formatted_phone_number;
+                    }
+                    if (Object.keys(entry).length > 0) {
+                      placeDetailsMap[p.place_id] = entry;
+                    }
+                  }
+                });
+              })(places[i]);
+            }
+          }
+
           function searchNearbyCafes(map, location, radius) {
             const service = new google.maps.places.PlacesService(map);
             const request1 = { location: location, radius: radius, type: 'cafe' };
@@ -97,6 +143,7 @@ export const getMapHtml = (lat: number, lng: number) => {
                 });
 
                 const top30 = filtered.slice(0, 30);
+                allPlaces = top30;
                 
                 const listForApp = top30.map(p => ({
                   name: p.name, vicinity: p.vicinity, rating: p.rating, place_id: p.place_id,
@@ -107,6 +154,8 @@ export const getMapHtml = (lat: number, lng: number) => {
                 for (let i = 0; i < top30.length; i++) {
                   createMarker(top30[i], map);
                 }
+
+                fetchDetailsForPlaces(top30);
               }
             }
 
@@ -137,16 +186,130 @@ export const getMapHtml = (lat: number, lng: number) => {
               icon: { url: customSvgIcon, scaledSize: new google.maps.Size(44, 44), anchor: new google.maps.Point(22, 22) }
             });
             
-            currentMarkers.push(marker); 
+            marker.placeId = place.place_id;
+            currentMarkers.push(marker);
+            allMarkers.push(marker);
 
-            marker.addListener("click", () => {
-              const cafeData = {
-                name: place.name, vicinity: place.vicinity, rating: place.rating, place_id: place.place_id,
-                geometry: { location: { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() } }
-              };
-              logToApp('MARKER_CLICK', cafeData);
+            marker.addListener("click", function() {
+              var p = place;
+              function sendWithDetails(details) {
+                var cafeData = {
+                  name: p.name, vicinity: p.vicinity, rating: p.rating, place_id: p.place_id,
+                  geometry: { location: { lat: p.geometry.location.lat(), lng: p.geometry.location.lng() } },
+                  opening_hours: details ? { open_now: details.open_now, weekday_text: details.weekday_text } : null,
+                  photo_url: details ? details.photo_url : null,
+                  phone: details ? details.phone : null
+                };
+                logToApp('MARKER_CLICK', cafeData);
+              }
+              var existing = placeDetailsMap[p.place_id] || null;
+              sendWithDetails(existing);
+              if (!existing) {
+                var svc = new google.maps.places.PlacesService(map);
+                svc.getDetails({ placeId: p.place_id, fields: ['opening_hours', 'photos', 'formatted_phone_number'] }, function(result, status) {
+                  if (status === google.maps.places.PlacesServiceStatus.OK && result) {
+                    var entry = {};
+                    if (result.opening_hours) { entry.open_now = result.opening_hours.open_now; entry.weekday_text = result.opening_hours.weekday_text; }
+                    if (result.photos && result.photos.length > 0) { entry.photo_url = result.photos[0].getUrl({ maxWidth: 200 }); }
+                    if (result.formatted_phone_number) { entry.phone = result.formatted_phone_number; }
+                    placeDetailsMap[p.place_id] = entry;
+                    sendWithDetails(entry);
+                  }
+                });
+              }
             });
           }
+          function showAllMarkers() {
+            for (var i = 0; i < allMarkers.length; i++) {
+              allMarkers[i].setVisible(true);
+            }
+          }
+
+          function hideAllMarkers() {
+            for (var i = 0; i < allMarkers.length; i++) {
+              allMarkers[i].setVisible(false);
+            }
+          }
+
+          function filterMarkers(keyword) {
+            if (!keyword || keyword.trim() === '') {
+              showAllMarkers();
+              return;
+            }
+            var kw = keyword.toLowerCase().replace(/\s+/g, '');
+            var kwCho = getChosung(kw);
+            for (var i = 0; i < allMarkers.length; i++) {
+              var place = allPlaces[i];
+              if (!place) continue;
+              var nameNorm = place.name.toLowerCase().replace(/\s+/g, '');
+              var vicinityNorm = place.vicinity ? place.vicinity.toLowerCase().replace(/\s+/g, '') : '';
+              var nameCho = getChosung(nameNorm);
+              var match = nameNorm.includes(kw) || vicinityNorm.includes(kw) || nameCho.includes(kwCho);
+              allMarkers[i].setVisible(match);
+            }
+          }
+
+          function filterBrand(brandName) {
+            if (!brandName || brandName === '') {
+              showAllMarkers();
+              return;
+            }
+            var bn = brandName.toLowerCase();
+            for (var i = 0; i < allMarkers.length; i++) {
+              var place = allPlaces[i];
+              if (!place) continue;
+              var info = getBrandInfoJS(place.name);
+              var match = info.isFranchise !== false && info.name.toLowerCase() === bn;
+              allMarkers[i].setVisible(match);
+            }
+          }
+
+          function filterByOpenNow() {
+            for (var i = 0; i < allMarkers.length; i++) {
+              var place = allPlaces[i];
+              if (!place) continue;
+              var hours = placeDetailsMap[place.place_id];
+              var open = hours && hours.open_now === true;
+              allMarkers[i].setVisible(open);
+            }
+          }
+
+          function filterByRating(min) {
+            for (var i = 0; i < allMarkers.length; i++) {
+              var place = allPlaces[i];
+              if (!place) continue;
+              var match = place.rating != null && place.rating >= min;
+              allMarkers[i].setVisible(match);
+            }
+          }
+
+          function clearFilter() {
+            showAllMarkers();
+          }
+
+          function panToPlace(placeId) {
+            for (var i = 0; i < allPlaces.length; i++) {
+              if (allPlaces[i].place_id === placeId) {
+                var loc = allPlaces[i].geometry.location;
+                map.panTo(loc);
+                map.setZoom(17);
+                if (allMarkers[i]) {
+                  google.maps.event.trigger(allMarkers[i], 'click');
+                }
+                break;
+              }
+            }
+          }
+
+          function filterFranchise() {
+            for (var i = 0; i < allMarkers.length; i++) {
+              var place = allPlaces[i];
+              if (!place) continue;
+              var info = getBrandInfoJS(place.name);
+              allMarkers[i].setVisible(info.isFranchise === true);
+            }
+          }
+
           window.onload = initMap;
         </script>
       </body>

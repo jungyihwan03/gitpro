@@ -3,84 +3,94 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors } from '../constants';
 
-// 🌟 부모(CafeDetailScreen)로부터 받을 Props 정의
+export interface MenuItem {
+  id: string;
+  name: string;
+  kcal: string;
+  price?: string;
+  thumbColor?: string;
+  iconFill?: string;
+}
+
+interface MenuSection {
+  category: string;
+  items: MenuItem[];
+}
+
 interface CafeMenuListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  menuData?: MenuSection[];
 }
 
-export default function CafeMenuList({ selectedId, onSelect }: CafeMenuListProps) {
-  // 📋 임시 데이터 (실제 서비스 시 서버에서 받아오는 데이터 형태)
-  const menuData = [
-    {
-      category: '에스프레소',
-      items: [
-        { id: '1', name: '카페 아메리카노', kcal: '10 kcal', price: '4,500원', thumbColor: '#5c3317', iconFill: '#fff' },
-        { id: '2', name: '카페 라떼', kcal: '150 kcal', price: '5,000원', thumbColor: '#5c3317', iconFill: '#fff' },
-        { id: '3', name: '바닐라 라떼', kcal: '210 kcal', price: '5,500원', thumbColor: '#5c3317', iconFill: '#fff' },
-      ]
-    },
-    {
-      category: '프라페 / 블렌디드',
-      items: [
-        { id: '4', name: '자바 칩 프라페', kcal: '480 kcal', price: '6,500원', thumbColor: '#BAE6FD', iconFill: '#0369A1' },
-        { id: '5', name: '민트 초코 블렌디드', kcal: '320 kcal', price: '6,300원', thumbColor: '#BAE6FD', iconFill: '#0369A1' },
-      ]
-    },
-    {
-      category: '티 / 리프레셔',
-      items: [
-        { id: '6', name: '유자 민트 티', kcal: '50 kcal', price: '5,500원', thumbColor: '#BBF7D0', iconFill: '#15803D' },
-        { id: '7', name: '히비스커스 티', kcal: '15 kcal', price: '5,000원', thumbColor: '#BBF7D0', iconFill: '#15803D' },
-      ]
-    }
-  ];
+const DEFAULT_MENU_DATA: MenuSection[] = [
+  {
+    category: '에스프레소',
+    items: [
+      { id: '1', name: '카페 아메리카노', kcal: '10 kcal', price: '4,500원', thumbColor: '#5c3317', iconFill: '#fff' },
+      { id: '2', name: '카페 라떼', kcal: '150 kcal', price: '5,000원', thumbColor: '#5c3317', iconFill: '#fff' },
+      { id: '3', name: '바닐라 라떼', kcal: '210 kcal', price: '5,500원', thumbColor: '#5c3317', iconFill: '#fff' },
+    ]
+  },
+  {
+    category: '프라페 / 블렌디드',
+    items: [
+      { id: '4', name: '자바 칩 프라페', kcal: '480 kcal', price: '6,500원', thumbColor: '#BAE6FD', iconFill: '#0369A1' },
+      { id: '5', name: '민트 초코 블렌디드', kcal: '320 kcal', price: '6,300원', thumbColor: '#BAE6FD', iconFill: '#0369A1' },
+    ]
+  },
+  {
+    category: '티 / 리프레셔',
+    items: [
+      { id: '6', name: '유자 민트 티', kcal: '50 kcal', price: '5,500원', thumbColor: '#BBF7D0', iconFill: '#15803D' },
+      { id: '7', name: '히비스커스 티', kcal: '15 kcal', price: '5,000원', thumbColor: '#BBF7D0', iconFill: '#15803D' },
+    ]
+  }
+];
+
+export default function CafeMenuList({ selectedId, onSelect, menuData }: CafeMenuListProps) {
+  const data = menuData ?? DEFAULT_MENU_DATA;
 
   return (
     <View style={styles.container}>
-      {menuData.map((section, index) => (
+      {data.map((section, index) => (
         <View key={index} style={styles.menuCard}>
           <Text style={styles.sectionLabel}>{section.category}</Text>
           
           <View style={styles.menuList}>
             {section.items.map((item, itemIndex) => {
-              // 🌟 현재 이 아이템이 선택되었는지 확인
               const isSelected = selectedId === item.id;
 
               return (
                 <TouchableOpacity 
                   key={item.id} 
                   activeOpacity={0.7} 
-                  onPress={() => onSelect(item.id)} // 🌟 클릭 시 부모에게 ID 전달
+                  onPress={() => onSelect(item.id)}
                   style={[
                     styles.menuItem, 
                     itemIndex === section.items.length - 1 && { borderBottomWidth: 0 },
-                    isSelected && styles.menuItemSelected // 🌟 선택 시 배경색 변경
+                    isSelected && styles.menuItemSelected
                   ]}
                 >
-                  {/* 썸네일 */}
-                  <View style={[styles.menuThumb, { backgroundColor: item.thumbColor }]}>
+                  <View style={[styles.menuThumb, { backgroundColor: item.thumbColor || '#5c3317' }]}>
                     <Svg width="26" height="26" viewBox="0 0 24 24" style={{ opacity: 0.8 }}>
-                      <Path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3z" fill={item.iconFill}/>
+                      <Path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3z" fill={item.iconFill || '#fff'}/>
                     </Svg>
                   </View>
 
-                  {/* 텍스트 정보 */}
                   <View style={styles.menuText}>
                     <Text style={[styles.menuName, isSelected && { color: Colors.primary }]}>
                       {item.name}
                     </Text>
                     <Text style={styles.menuKcal}>{item.kcal}</Text>
-                    <Text style={styles.menuPrice}>{item.price}</Text>
+                    {item.price ? <Text style={styles.menuPrice}>{item.price}</Text> : null}
                   </View>
 
-                  {/* 추가(체크) 버튼 */}
                   <View style={[
                     styles.menuAddBtn, 
-                    isSelected && { backgroundColor: Colors.primary } // 🌟 선택 시 버튼 색상 반전
+                    isSelected && { backgroundColor: Colors.primary }
                   ]}>
                     <Svg width="18" height="18" viewBox="0 0 24 24">
-                      {/* 선택 여부에 따라 + 아이콘 혹은 체크 아이콘으로 보이게 함 (여기선 아이콘 색상만 변경) */}
                       <Path 
                         d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" 
                         fill={isSelected ? "#FFFFFF" : Colors.primary}
@@ -126,15 +136,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 16,
     paddingVertical: 16,
-    paddingHorizontal: 8, // 선택 효과를 위해 약간의 좌우 여백 추가
-    borderRadius: 16,     // 선택 효과를 위해 모서리 둥글게
+    paddingHorizontal: 8,
+    borderRadius: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  // 🌟 선택되었을 때의 스타일
   menuItemSelected: {
-    backgroundColor: 'rgba(139,46,58,0.05)', // 브랜드 컬러 투명하게 배경
-    borderBottomColor: 'transparent',       // 선택 시 선 숨김
+    backgroundColor: 'rgba(139,46,58,0.05)',
+    borderBottomColor: 'transparent',
   },
   menuThumb: {
     width: 56,

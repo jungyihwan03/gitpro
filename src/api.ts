@@ -1,6 +1,6 @@
 // src/api.ts
 import axios from 'axios';
-import { GEMINI_API_KEY, BACKEND_API_URL } from './constants';
+import { GEMINI_API_KEY, BACKEND_API_URL, GOOGLE_MAPS_API_KEY } from './constants';
 
 export const getAiAnalysis = async (foodName: string, baseFood: { name: string, kcal: number }) => {
   const MODEL_NAME = 'gemini-flash-latest'; 
@@ -32,6 +32,18 @@ export const saveCoffeeApi = async (coffeeName: string, caffeine: number, brand:
 };
 
 export const fetchCoffeeApi = async () => {
-  const response = await axios.get(`${BACKEND_API_URL}/coffee/list`);
+  const response = await axios.get(`${BACKEND_API_URL}/api/coffee/list`);
   return response.data;
+};
+
+export const fetchPlaceDetails = async (placeId: string) => {
+  if (!GOOGLE_MAPS_API_KEY) return null;
+  try {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=formatted_phone_number,website,price_level,photos,rating,user_ratings_total&language=ko&key=${GOOGLE_MAPS_API_KEY}`;
+    const res = await axios.get(url);
+    return res.data.result;
+  } catch (error: any) {
+    console.error("Place Details API error:", error.response?.data || error.message);
+    return null;
+  }
 };

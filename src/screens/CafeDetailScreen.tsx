@@ -1,26 +1,87 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants';
-import { useNavigation } from '@react-navigation/native';
+import { Colors, getBrandInfo } from '../constants';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { fetchPlaceDetails, fetchCoffeeApi } from '../api';
 
-// 컴포넌트 임포트
 import NavHeader from '../components/NavHeader';
 import BottomNavBar from '../components/BottomNavBar';
 import CafeHeroCard from '../components/CafeHeroCard';
 import CafeTabBar from '../components/CafeTabBar';
-import BottomCtaBar from '../components/BottomCtaBar'; 
-import CafeMenuList from '../components/CafeMenuList'; 
+import BottomCtaBar from '../components/BottomCtaBar';
+import CafeMenuList from '../components/CafeMenuList';
+import type { MenuItem } from '../components/CafeMenuList';
 import CafePhotoGallery from '../components/CafePhotoGallery';
 import CafeDetailInfo from '../components/CafeDetailInfo';
+import CafeExternalInfo from '../components/CafeExternalInfo';
 
 export default function CafeDetailScreen() {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const cafe = route.params?.cafe ?? null;
+  const distance = route.params?.distance ?? '';
+
   const [isFavorite, setIsFavorite] = useState(false);
-  
-  // 🌟 상태 관리: 현재 탭(기본값 '홈')과 선택된 메뉴 ID
   const [activeTab, setActiveTab] = useState('홈');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const brandInfo = getBrandInfo(cafe?.name || '');
+  const isFranchise = brandInfo.isFranchise;
+
+  const [menuData, setMenuData] = useState<{ category: string; items: MenuItem[] }[] | null>(null);
+  const [placeDetails, setPlaceDetails] = useState<any>(null);
+  const [loadingData, setLoadingData] = useState(false);
+
+  useEffect(() => {
+    if (!cafe?.name) return;
+
+    setLoadingData(true);
+
+    fetchPlaceDetails(cafe.place_id)
+      .then((details) => setPlaceDetails(details))
+      .catch((err) => console.error('Place Details error:', err));
+
+    if (isFranchise) {
+      const brandName = brandInfo.name;
+      fetchCoffeeApi()
+        .then((data: any[]) => {
+          const filtered = data.filter((item: any) => {
+            const itemBrand = (item.brand || '').toLowerCase();
+            return brandName.toLowerCase().includes(itemBrand) || itemBrand.includes(brandName.toLowerCase());
+          });
+
+          if (filtered.length === 0) {
+            setMenuData(null);
+            return;
+          }
+
+          const grouped: Record<string, MenuItem[]> = {};
+          filtered.forEach((item: any) => {
+            const cat = item.category || '기타';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push({
+              id: item._id,
+              name: item.coffeeName,
+              kcal: `${item.calories || 0} kcal`,
+              price: item.caffeine ? `카페인 ${item.caffeine}mg` : undefined,
+              thumbColor: '#5c3317',
+              iconFill: '#fff',
+            });
+          });
+
+          const sections = Object.entries(grouped).map(([category, items]) => ({ category, items }));
+          setMenuData(sections);
+        })
+        .catch((err) => {
+          console.error('DB menu fetch error:', err);
+          setMenuData(null);
+        })
+        .finally(() => setLoadingData(false));
+    } else {
+      setLoadingData(false);
+    }
+  }, [cafe?.place_id]);
 
   const HeartButton = (
     <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
@@ -32,13 +93,11 @@ export default function CafeDetailScreen() {
     </TouchableOpacity>
   );
 
-  // 기록하기 버튼 클릭 시 실행
   const handleRecord = () => {
     if (!selectedId) {
       Alert.alert('알림', '기록할 메뉴를 먼저 선택해 주세요.');
       return;
     }
-    // 선택된 ID를 가지고 상세 화면으로 이동
     navigation.navigate('MenuDetail', { menuId: selectedId });
   };
 
@@ -47,7 +106,7 @@ export default function CafeDetailScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <NavHeader 
-        title="카페 상세 정보" 
+        title={cafe?.name || '카페 상세 정보'} 
         onBack={() => navigation.goBack()}
         rightAction={HeartButton}
       />
@@ -57,10 +116,8 @@ export default function CafeDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* 카페 공통 상단 정보 */}
-        <CafeHeroCard />
+        <CafeHeroCard cafe={cafe != null ? cafe : undefined} distance={distance} phone={cafe?.phone || placeDetails?.formatted_phone_number} />
         
-        {/* 탭바: 클릭 시 activeTab 상태를 변경함 */}
         <CafeTabBar 
           activeTab={activeTab} 
           onTabChange={(tabName) => {
@@ -69,37 +126,37 @@ export default function CafeDetailScreen() {
           }} 
         />
         
-        {/* ── 탭별 컨텐츠 분기 ── */}
-        
-        {/* [홈 탭] 사진 갤러리와 상세 정보 표시 */}
         {activeTab === '홈' && (
           <>
-            <CafePhotoGallery />
-            <CafeDetailInfo />
+            <CafePhotoGallery photos={placeDetails?.photos} />
+            <CafeDetailInfo vicinity={cafe?.vicinity} placeHours={cafe?.opening_hours || placeDetails?.opening_hours} phone={cafe?.phone || placeDetails?.formatted_phone_number} />
+            {(() => { console.log('=== CafeDetailInfo phone ===', cafe?.phone, placeDetails?.formatted_phone_number); return null; })()}
           </>
         )}
 
-        {/* [메뉴 탭] 메뉴 리스트 표시 */}
         {activeTab === '메뉴' && (
-          <CafeMenuList 
-            selectedId={selectedId} 
-            onSelect={(id) => setSelectedId(id)} 
-          />
+          loadingData ? (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+          ) : isFranchise ? (
+            <CafeMenuList 
+              selectedId={selectedId} 
+              onSelect={(id) => setSelectedId(id)} 
+              menuData={menuData ?? undefined}
+            />
+          ) : (
+            <CafeExternalInfo details={placeDetails} />
+          )
         )}
-
-        {/* 리뷰/기록 탭의 경우 필요 시 여기에 추가 */}
         
       </ScrollView>
 
-      {/* 🌟 [핵심 로직] activeTab이 정확히 '메뉴'일 때만 하단 기록하기 버튼을 렌더링함 */}
-      {activeTab === '메뉴' && (
+      {activeTab === '메뉴' && isFranchise && (
         <BottomCtaBar 
           title="선택한 메뉴 기록하기" 
           onPress={handleRecord}
         />
       )}
 
-      {/* 하단 네비게이션 바 */}
       <BottomNavBar activeTab="지도" />
     </View>
   );
@@ -111,7 +168,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
     gap: 24,
-    // 하단바와 버튼에 가려지지 않도록 넉넉한 여백 부여
-    paddingBottom: 180, 
+    paddingBottom: 180,
   },
 });

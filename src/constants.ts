@@ -11,21 +11,38 @@ export interface CafeData {
   vicinity: string;
   rating?: number;
   place_id: string;
-  geometry: { location: { lat: number; lng: number; } };
+  geometry: { location: { lat: number; lng: number } };
+  opening_hours?: {
+    open_now?: boolean;
+    weekday_text?: string[];
+  } | null;
+  photo_url?: string | null;
+  phone?: string | null;
 }
 
 // 프랜차이즈 브랜드 색상 및 정보
 export const BRAND_STYLES = [
   { keywords: ['스타벅스', 'Starbucks'], color: '#006241', short: 'S', name: '스타벅스' },
   { keywords: ['이디야', 'Ediya'], color: '#2C3E91', short: 'E', name: '이디야' },
-  { keywords: ['투썸', 'Twosome'], color: '#D3232A', short: 'T', name: '투썸' },
+  { keywords: ['투썸', 'Twosome', '투썸플레이스'], color: '#D3232A', short: 'T', name: '투썸' },
   { keywords: ['메가커피', 'Mega', 'MGC', '메가MGC', '메가'], color: '#FFD000', short: 'M', name: '메가커피' },
   { keywords: ['빽다방', 'Paik'], color: '#003399', short: 'P', name: '빽다방' },
   { keywords: ['컴포즈', 'Compose'], color: '#FFCC00', short: 'C', name: '컴포즈' },
   { keywords: ['할리스', 'Hollys'], color: '#BA0000', short: 'H', name: '할리스' },
-  { keywords: ['커피빈', 'Coffee Bean'], color: '#381E15', short: 'B', name: '커피빈' },
-  { keywords: ['블루보틀', 'Blue'], color: '#00A4E4', short: 'B', name: '블루보틀' },
-  { keywords: ['폴바셋', 'Paul'], color: '#000000', short: 'P', name: '폴바셋' },
+  { keywords: ['커피빈', 'Coffee Bean', '커피빈코리아'], color: '#381E15', short: 'B', name: '커피빈' },
+  { keywords: ['블루보틀', 'Blue Bottle'], color: '#00A4E4', short: 'B', name: '블루보틀' },
+  { keywords: ['폴바셋', 'Paul Bassett'], color: '#000000', short: 'P', name: '폴바셋' },
+  { keywords: ['파스쿠찌', 'Pascucci'], color: '#8B4513', short: 'P', name: '파스쿠찌' },
+  { keywords: ['엔제리너스', 'Angel-in-us', '엔젤리너스'], color: '#8B008B', short: 'A', name: '엔제리너스' },
+  { keywords: ['카페베네', 'Caffe Bene', '카페베네'], color: '#CD853F', short: 'B', name: '카페베네' },
+  { keywords: ['탐앤탐스', 'Tom N Toms', '탐앤탐스'], color: '#2F4F4F', short: 'T', name: '탐앤탐스' },
+  { keywords: ['드롭탑', 'Drop Top'], color: '#4169E1', short: 'D', name: '드롭탑' },
+  { keywords: ['커피나무', 'Coffee Namu'], color: '#228B22', short: 'N', name: '커피나무' },
+  { keywords: ['더벤티', 'The Venti', '벤티'], color: '#FF6347', short: 'V', name: '더벤티' },
+  { keywords: ['달콤커피', 'Dalkom'], color: '#FF69B4', short: 'D', name: '달콤커피' },
+  { keywords: ['감성커피', 'Gamseong'], color: '#DAA520', short: 'G', name: '감성커피' },
+  { keywords: ['커피에반하다', 'Ever'], color: '#4B0082', short: 'E', name: '커피에반하다' },
+  { keywords: ['매머드커피', 'Mammoth'], color: '#8B0000', short: 'M', name: '매머드커피' },
 ];
 
 export const DEFAULT_STYLE = { color: '#8D6E63', short: 'C', name: '일반카페' };
