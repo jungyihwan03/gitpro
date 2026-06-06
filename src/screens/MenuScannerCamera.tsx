@@ -146,10 +146,10 @@ export default function MenuScannerCamera() {
 
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         {/* 상단 바: 뒤로가기 및 플래시 제어 */}
-        <TopBar
+        {/* <TopBar
           onClose={() => navigation.goBack()}
           onFlash={() => setFlash(f => f === 'off' ? 'on' : 'off')}
-        />
+        /> */}
 
         {/* 분석 중 로딩 레이어 */}
         {isAnalyzing && (

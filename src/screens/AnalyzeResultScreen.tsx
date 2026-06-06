@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 // 🌟 표준 SafeAreaView 사용 (react-native-safe-area-context)
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Colors } from '../constants'; 
 
@@ -108,7 +109,8 @@ export default function AnalyzeResultScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar style="dark" />
       {/* 헤더 영역 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
@@ -139,7 +141,7 @@ export default function AnalyzeResultScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

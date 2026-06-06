@@ -37,13 +37,13 @@ export default function ScannerGuide({ hintText }: ScannerGuideProps) {
   return (
     <View style={styles.guideWrap}>
       {/* 가이드 코너 네 네모 */}
-      <View style={[styles.guideCorner, styles.tl]} />
+      {/* <View style={[styles.guideCorner, styles.tl]} />
       <View style={[styles.guideCorner, styles.tr]} />
       <View style={[styles.guideCorner, styles.bl]} />
-      <View style={[styles.guideCorner, styles.br]} />
+      <View style={[styles.guideCorner, styles.br]} /> */}
       
       {/* 🌟 움직이는 스캔 라인 애니메이션 */}
-      <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} />
+      {/* <Animated.View style={[styles.scanLine, { transform: [{ translateY }] }]} /> */}
       
       {/* 가이드 힌트 텍스트 */}
       <View style={styles.guideHintWrap}>
