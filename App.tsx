@@ -23,6 +23,7 @@ import AnalyzeResultScreen from './src/screens/AnalyzeResultScreen';
 import Map from './src/screens/Map';
 import CafeDetailScreen from './src/screens/CafeDetailScreen';
 import CafeMenuScreen from './src/screens/CafeMenuScreen';
+import { CafeReviewScreen } from './src/screens/CafeReviewScreen';
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
 import { CompareScreen } from './src/screens/CompareScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
