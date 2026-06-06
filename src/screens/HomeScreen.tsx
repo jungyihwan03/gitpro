@@ -30,10 +30,10 @@ export default function HomeScreen() {
   const isFocused = useIsFocused();
   const lastBackPressed = useRef<number>(0);
 
-  // 1. 상태 관리
+  // 1. 상태 관리 (🌟 당류(sugar) 데이터도 안전하게 추가)
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [stats, setStats] = useState({ caffeine: 0, calories: 0, protein: 0 });
+  const [stats, setStats] = useState({ caffeine: 0, calories: 0, protein: 0, sugar: 0 });
   const [timeline, setTimeline] = useState([]);
 
   // 2. 유저 정보 추출 (params 구조에 따라 안전하게 접근)
@@ -59,7 +59,6 @@ export default function HomeScreen() {
 
   // 3. 데이터 가져오기 (무한 로딩 방지 로직 적용)
   const fetchTodayData = async () => {
-    // 🌟 userId가 없으면 로딩을 끄고 중단 (에러 방지)
     if (!userId) {
       console.log("❌ 유저 ID를 찾을 수 없어 데이터를 불러오지 못합니다.");
       setLoading(false);
@@ -72,19 +71,17 @@ export default function HomeScreen() {
       const data = await response.json();
       
       if (response.ok) {
-        setStats(data.totals || { caffeine: 0, calories: 0, protein: 0 });
+        setStats(data.totals || { caffeine: 0, calories: 0, protein: 0, sugar: 0 });
         setTimeline(data.timeline || []);
       }
     } catch (error) {
       console.error("📡 데이터 로딩 실패:", error);
     } finally {
-      // 🌟 성공하든 실패하든 로딩 스피너는 반드시 멈춥니다.
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  // 화면이 보일 때마다 실행
   useFocusEffect(
     useCallback(() => {
       fetchTodayData();
@@ -163,18 +160,30 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.nutrients}>
-            <View style={styles.nutrientItem}>
-              <View style={[styles.nDot, { backgroundColor: Colors.warning }]} />
-              <Text style={styles.nLabel}>카페인</Text>
-              <Text style={styles.nVal}>{stats.caffeine}mg</Text>
-              <Text style={styles.nTotal}>/ 400mg</Text>
+          {/* 🌟 팀원이 지웠던 당류를 되살리고, 2줄(윗줄:당류/단백질, 아랫줄:카페인) 구조로 복구 */}
+          <View style={styles.nutrientsWrapper}>
+            {/* 첫 번째 줄: 당류 & 단백질 */}
+            <View style={styles.nutrientsRow}>
+              <View style={styles.nutrientItem}>
+                <View style={[styles.nDot, { backgroundColor: Colors.warning }]} />
+                <Text style={styles.nLabel}>당류</Text>
+                <Text style={styles.nVal}>{stats.sugar || 0}g</Text>
+                <Text style={styles.nTotal}>/ 50g</Text>
+              </View>
+              <View style={styles.nutrientItem}>
+                <View style={[styles.nDot, { backgroundColor: Colors.primary, opacity: 0.5 }]} />
+                <Text style={styles.nLabel}>단백질</Text>
+                <Text style={styles.nVal}>{stats.protein || 0}g</Text>
+                <Text style={styles.nTotal}>/ 60g</Text>
+              </View>
             </View>
+
+            {/* 두 번째 줄: 카페인 (가운데 정렬) */}
             <View style={styles.nutrientItem}>
-              <View style={[styles.nDot, { backgroundColor: Colors.primary, opacity: 0.5 }]} />
-              <Text style={styles.nLabel}>단백질</Text>
-              <Text style={styles.nVal}>{stats.protein}g</Text>
-              <Text style={styles.nTotal}>/ 60g</Text>
+              <View style={[styles.nDot, { backgroundColor: '#6F4E37' }]} />
+              <Text style={styles.nLabel}>카페인</Text>
+              <Text style={styles.nVal}>{stats.caffeine || 0}mg</Text>
+              <Text style={styles.nTotal}>/ 400mg</Text>
             </View>
           </View>
 
@@ -201,7 +210,6 @@ export default function HomeScreen() {
           
           <View style={styles.timelineList}>
             {loading ? (
-              // 🌟 무한 로딩이 일어나는 지점
               <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
             ) : timeline && timeline.length > 0 ? (
               timeline.slice(0, 5).map((log: any, index: number) => (
@@ -240,12 +248,17 @@ const styles = StyleSheet.create({
   cValue: { fontSize: 28, fontWeight: '700', color: Colors.text1, lineHeight: 32 },
   cUnit: { fontSize: 14, fontWeight: '500', color: Colors.text2 },
   cTotal: { fontSize: 12, color: Colors.text2, marginTop: 4 },
-  nutrients: { flexDirection: 'row', gap: 20, justifyContent: 'center', marginBottom: 20 },
+  
+  // 🌟 변경된 영양소 레이아웃 스타일
+  nutrientsWrapper: { flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 20 },
+  nutrientsRow: { flexDirection: 'row', gap: 20, justifyContent: 'center' },
   nutrientItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  
   nDot: { width: 10, height: 10, borderRadius: 5 },
   nLabel: { fontSize: 13, color: Colors.text1, fontWeight: '500' },
   nVal: { fontSize: 13, fontWeight: '700', color: Colors.text1, marginLeft: 2 },
   nTotal: { fontSize: 13, color: Colors.text2, fontWeight: '400' },
+  
   timelineSection: { flexDirection: 'column', gap: 16 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { fontSize: 18, fontWeight: '700', color: Colors.text1, lineHeight: 28 },
