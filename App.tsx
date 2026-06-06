@@ -24,6 +24,7 @@ import Map from './src/screens/Map';
 import CafeDetailScreen from './src/screens/CafeDetailScreen';
 import CafeMenuScreen from './src/screens/CafeMenuScreen';
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
+import { CompareScreen } from './src/screens/CompareScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProfileDetailScreen } from './src/screens/ProfileDetailScreen';
 
