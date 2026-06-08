@@ -23,7 +23,7 @@ export default function MenuDetailScreen() {
   // 영양성분 리스트 바인딩
   const nutritionData = [
     { label: '칼로리 (kcal)', value: String(item?.calories || 0), isHighlight: true },
-    { label: '당류 (g)', value: '0' },
+    { label: '당류 (g)', value: String(item?.sugar || 0) },
     { label: '단백질 (g)', value: String(item?.protein || 0) },
     { label: '카페인 (mg)', value: String(item?.caffeine || 0) },
     { label: '포화지방 (g)', value: '0' },
@@ -55,6 +55,7 @@ export default function MenuDetailScreen() {
           calories: item.calories,
           caffeine: item.caffeine,
           protein: item.protein,
+          sugar: Number(item?.sugar) || 0,
           emoji: item.emoji || "☕"
         }),
       });

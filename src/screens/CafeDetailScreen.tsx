@@ -15,6 +15,8 @@ import type { MenuItem } from '../components/CafeMenuList';
 import CafePhotoGallery from '../components/CafePhotoGallery';
 import CafeDetailInfo from '../components/CafeDetailInfo';
 import CafeExternalInfo from '../components/CafeExternalInfo';
+import { ReviewTabContent } from '../components/ReviewTabContent';
+import { MyRecordTabContent } from '../components/MyRecordTabContent';
 
 export default function CafeDetailScreen() {
   const navigation = useNavigation<any>();
@@ -147,6 +149,10 @@ export default function CafeDetailScreen() {
             <CafeExternalInfo details={placeDetails} />
           )
         )}
+
+        {activeTab === '리뷰' && <ReviewTabContent />}
+
+        {activeTab === '나의 기록' && <MyRecordTabContent />}
         
       </ScrollView>
 

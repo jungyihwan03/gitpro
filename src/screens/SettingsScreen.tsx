@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRoute } from '@react-navigation/native';
 import { Colors, Layout } from '../constants';
 import NavHeader from '../components/NavHeader';
+import { useUserStore } from '../store/useUserStore';
 import BottomNavBar from '../components/BottomNavBar';
 import { SectionHeader } from '../components/SettingsScreen/SectionHeader';
 import { ListItem } from '../components/SettingsScreen/ListItem';
@@ -15,9 +16,10 @@ import { SwitchItem } from '../components/SettingsScreen/SwitchItem';
 
 export const SettingsScreen = ({ navigation }: any) => {
   const route = useRoute<any>();
+  const storeUser = useUserStore((s) => s.user);
   
-  // 🌟 [핵심] 네비게이션 파라미터에서 유저 정보 추출
-  const userData = route.params?.user || route.params;
+  // 🌟 [핵심] store 우선, params fallback
+  const userData = storeUser || route.params?.user || route.params;
 
   // 스위치 상태 관리
   const [alertLimit, setAlertLimit] = useState(false);
@@ -94,7 +96,7 @@ export const SettingsScreen = ({ navigation }: any) => {
           <TouchableOpacity 
             activeOpacity={0.6} 
             style={styles.profileLinkBtn}
-            onPress={() => navigation.navigate('UserInfoUpdate', { user: userData })}
+            onPress={() => navigation.push('ProfileDetail', { user: userData })}
           >
             <Text style={styles.profileLinkText}>프로필 상세 보기</Text>
             <Svg width="16" height="16" viewBox="0 0 24 24">

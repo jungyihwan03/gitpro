@@ -7,7 +7,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native'; 
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-import { Colors, Layout } from '../constants'; 
+import { Colors, Layout } from '../constants';
+import { useUserStore } from '../store/useUserStore'; 
 import { CustomInput } from '../components/CustomInput'; 
 import { PrimaryButton } from '../components/PrimaryButton'; 
 
@@ -25,8 +26,11 @@ export const Login = () => {
     });
   }, []);
 
+  const setUser = useUserStore((s) => s.setUser);
+
   // 🌟 공통 네비게이션 로직 (수정됨)
   const navigateAfterLogin = (user: any) => {
+    setUser(user);
     if (user.gender && user.age) { // 또는 user.isBasicInfoCompleted 등 기존 로직 활용
       // 이미 입력 완료했다면 홈으로 직행
       navigation.reset({

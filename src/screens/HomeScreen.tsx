@@ -17,6 +17,7 @@ import { useRoute, useNavigation, useIsFocused, useFocusEffect } from '@react-na
 
 import { Colors, Layout } from '../constants';
 import AppBar from '../components/AppBar';
+import { useUserStore } from '../store/useUserStore';
 import { PrimaryButton } from '../components/PrimaryButton';
 import AlertCard from '../components/AlertCard';
 import TimelineItem from '../components/TimelineItem';
@@ -36,9 +37,10 @@ export default function HomeScreen() {
   const [stats, setStats] = useState({ caffeine: 0, calories: 0, protein: 0, sugar: 0 });
   const [timeline, setTimeline] = useState([]);
 
-  // 2. 유저 정보 추출 (params 구조에 따라 안전하게 접근)
+  // 2. 유저 정보 추출 (store 우선, params fallback)
   const params = route.params || {};
-  const userData = params.user || params.params?.user || params;
+  const storeUser = useUserStore((s) => s.user);
+  const userData = storeUser || params.user || params.params?.user || params;
   const userName = userData.name || '회원';
   const userId = userData._id; 
 

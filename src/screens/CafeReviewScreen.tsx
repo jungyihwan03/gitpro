@@ -44,7 +44,7 @@ export const CafeReviewScreen = () => {
         <CafeHeroCard />
 
         {/* 🌟 2. 이미 만들어진 탭 바 */}
-        <CafeTabBar activeTab="리뷰" />
+        <CafeTabBar activeTab="리뷰" onTabChange={() => {}} />
 
         {/* 3. 리뷰 메인 섹션 */}
         <View style={styles.card}>

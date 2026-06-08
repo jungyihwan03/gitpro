@@ -51,6 +51,7 @@ export default function AnalyzeResultScreen() {
           calories: Number(item.calories) || 0,
           protein: Number(item.protein) || 0,
           caffeine: Number(item.caffeine) || 0,
+          sugar: Number(item.sugar) || 0,
           emoji: item.emoji || '☕'
         }),
       });

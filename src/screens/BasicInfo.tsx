@@ -114,7 +114,7 @@ export const BasicInfo = () => {
       const data = await response.json();
 
       if (response.ok) {
-        // 성공 시 메인 화면으로 이동하며 서버가 반환한 최신 유저 정보를 넘깁니다.
+        useUserStore.getState().setUser(data.user);
         navigation.reset({
           index: 0,
           routes: [{ 

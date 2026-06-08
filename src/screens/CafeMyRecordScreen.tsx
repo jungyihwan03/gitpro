@@ -70,7 +70,7 @@ export const CafeMyRecordScreen = () => {
         <CafeHeroCard />
 
         {/* ② 기존 공통 탭 바 */}
-        <CafeTabBar activeTab="나의 기록" />
+        <CafeTabBar activeTab="나의 기록" onTabChange={() => {}} />
 
         {/* ③ 나의 기록 메인 섹션 */}
         <View style={styles.card}>

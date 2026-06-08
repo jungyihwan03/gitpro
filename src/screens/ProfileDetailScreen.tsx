@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Keyboard } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Keyboard, Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path } from 'react-native-svg';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-// 공통 토큰 및 컴포넌트 로드
 import { Colors, Layout } from '../constants';
 import NavHeader from '../components/NavHeader';
+import { useUserStore } from '../store/useUserStore';
 
 // 🌟 새로 컴포넌트화 시킨 파일들 로드
 import { AvatarSection } from '../components/ProfileDetailScreen/AvatarSection';
@@ -13,31 +14,89 @@ import { AccountInfoCard } from '../components/ProfileDetailScreen/AccountInfoCa
 import { BodyInfoCard } from '../components/ProfileDetailScreen/BodyInfoCard';
 
 export const ProfileDetailScreen = () => {
-    // 🌟 계정 정보용 상태 변수들 추가
-  const [nickname, setNickname] = useState('김카페');
+  const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const storeUser = useUserStore((s) => s.user);
+  const user = storeUser || route.params?.user || {};
 
-  // 데이터 비즈니스 상태 관리
-  const [gender, setGender] = useState<'male' | 'female'>('female');
-  const [height, setHeight] = useState('175');
-  const [weight, setWeight] = useState('68');
-  const [age, setAge] = useState('28');
+  const [nickname, setNickname] = useState(user.name || '사용자');
 
-  // 🌟 우측 [변경] 버튼 클릭 시 수행할 비즈니스 로직
-  const handleSaveNickname = () => {
-    Keyboard.dismiss(); // 자판 내리기
-    console.log('변경된 닉네임 반영 저장:', nickname);
+  const [gender, setGender] = useState<'male' | 'female'>((user.gender || 'female') === 'M' ? 'male' : 'female');
+  const [height, setHeight] = useState(String(user.height || ''));
+  const [weight, setWeight] = useState(String(user.weight || ''));
+  const [age, setAge] = useState(String(user.age || ''));
+
+  const setUser = useUserStore((s) => s.setUser);
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+
+  const updateFromServer = (serverUser: any) => {
+    setNickname(serverUser.name || nickname);
+    setGender((serverUser.gender || 'F') === 'M' ? 'male' : 'female');
+    setHeight(String(serverUser.height ?? height));
+    setWeight(String(serverUser.weight ?? weight));
+    setAge(String(serverUser.age ?? age));
+    const merged = { ...user, ...serverUser };
+    setUser(merged);
+    navigation.setParams({ user: merged });
+  };
+
+  const handleSaveNickname = async () => {
+    Keyboard.dismiss();
+    const newName = nickname;
+    try {
+      const res = await fetch(`${backendUrl}/api/users/basic-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _id: user._id, name: newName }),
+      });
+      const data = await res.json();
+      console.log('handleSaveNickname response', { ok: res.ok, data });
+      const serverUser = data.user;
+      if (res.ok && serverUser) {
+        const merged = { ...user, name: newName, ...serverUser };
+        setUser(merged);
+        setNickname(newName);
+        navigation.setParams({ user: merged });
+        Alert.alert('완료', '닉네임이 변경되었습니다.');
+      } else {
+        Alert.alert('오류', JSON.stringify(data));
+      }
+    } catch (e: any) {
+      Alert.alert('오류', `네트워크: ${e.message}`);
+    }
   };
   
-  const handleSave = () => {
-    // 권장량 재계산 로직 처리 구간
-    console.log('저장 데이터:', { gender, height, weight, age });
+  const handleSave = async () => {
+    try {
+      const res = await fetch(`${backendUrl}/api/users/basic-info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          _id: user._id,
+          gender: gender === 'male' ? 'M' : 'F',
+          height: Number(height),
+          weight: Number(weight),
+          age: Number(age),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        updateFromServer(data.user);
+        Alert.alert('완료', '신체 정보가 저장되었습니다.');
+      } else {
+        Alert.alert('오류', JSON.stringify(data));
+      }
+    } catch (e: any) {
+      Alert.alert('오류', `네트워크: ${e.message}`);
+    }
   };
 
   return (
     <View style={styles.safeArea}>
         <StatusBar style="dark" />
         {/* 뒤로가기 네비게이션 헤더 */}
-        <NavHeader title="프로필 상세" onBack={() => console.log('뒤로가기 클릭')} />
+        <NavHeader title="프로필 상세" onBack={() => navigation.goBack()} />
 
         <ScrollView 
         style={styles.scrollArea} 
@@ -46,17 +105,16 @@ export const ProfileDetailScreen = () => {
         >
         {/* ① 프로필 아바타 섹션 컴포넌트 */}
         <AvatarSection 
-            name="김카페" 
-            email="kimcafe@example.com" 
+            name={nickname}
+            email={user.email || ''}
             onEditPress={() => console.log('아바타 수정 클릭')}
         />
 
-        {/* ② 계정 정보 카드 컴포넌트 */}
         <AccountInfoCard 
           nickname={nickname} 
           onChangeNickname={setNickname}
           onSaveNicknamePress={handleSaveNickname}
-          email="kimcafe@example.com" 
+          email={user.email || ''}
         />
 
         {/* ③ 신체 정보 카드 컴포넌트 (상태 값들과 핸들러 매핑) */}

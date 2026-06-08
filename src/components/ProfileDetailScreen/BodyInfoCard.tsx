@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../../constants';
-import { InputField } from '../InputField'; // 🌟 첫 번째에 수정한 공통 컴포넌트 재사용
+import { InputField } from '../SettingsScreen/InputField'; // 🌟 첫 번째에 수정한 공통 컴포넌트 재사용
 
 interface BodyInfoCardProps {
   gender: 'male' | 'female';
