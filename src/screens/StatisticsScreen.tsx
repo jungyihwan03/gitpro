@@ -5,6 +5,7 @@ import Svg, { Path, Rect } from 'react-native-svg';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { Colors, Layout } from '../constants';
+import NavHeader from '../components/NavHeader';
 import BottomNavBar from '../components/BottomNavBar';
 import { SummaryCard } from '../components/StatisticsScreen/SummaryCard';
 import { ChartCard } from '../components/StatisticsScreen/ChartCard';
@@ -152,6 +153,7 @@ export const StatisticsScreen = () => {
   return (
     <View style={styles.safeArea}>
       <StatusBar style="dark" />
+      <NavHeader title="통계 내역" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
         <View style={styles.segTab}>
           {SEGMENTS.map((tab, i) => (

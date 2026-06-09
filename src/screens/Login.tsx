@@ -159,7 +159,7 @@ export const Login = () => {
             
             <View style={styles.findPwWrap}>
               <TouchableOpacity activeOpacity={0.6} style={styles.linkTouch} onPress={() => navigation.navigate('FindId')}>
-                <Text style={styles.findPwLink}>아이디 찾기</Text>
+                <Text style={styles.findPwLink}></Text>
               </TouchableOpacity>
               <TouchableOpacity activeOpacity={0.6} style={styles.linkTouch} onPress={() => navigation.navigate('FindPassword')}>
                 <Text style={styles.findPwLink}>비밀번호 찾기</Text>
