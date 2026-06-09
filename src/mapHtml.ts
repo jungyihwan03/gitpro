@@ -86,32 +86,6 @@ export const getMapHtml = (lat: number, lng: number) => {
 
           var placeDetailsMap = {};
 
-          function fetchDetailsForPlaces(places) {
-            for (var i = 0; i < places.length; i++) {
-              (function(p) {
-                var detailService = new google.maps.places.PlacesService(map);
-                detailService.getDetails({ placeId: p.place_id, fields: ['opening_hours', 'photos', 'formatted_phone_number'] }, function(result, status) {
-                  if (status === google.maps.places.PlacesServiceStatus.OK && result) {
-                    var entry = {};
-                    if (result.opening_hours) {
-                      entry.open_now = result.opening_hours.open_now;
-                      entry.weekday_text = result.opening_hours.weekday_text;
-                    }
-                    if (result.photos && result.photos.length > 0) {
-                      entry.photo_url = result.photos[0].getUrl({ maxWidth: 200 });
-                    }
-                    if (result.formatted_phone_number) {
-                      entry.phone = result.formatted_phone_number;
-                    }
-                    if (Object.keys(entry).length > 0) {
-                      placeDetailsMap[p.place_id] = entry;
-                    }
-                  }
-                });
-              })(places[i]);
-            }
-          }
-
           function searchNearbyCafes(map, location, radius) {
             const service = new google.maps.places.PlacesService(map);
             const request1 = { location: location, radius: radius, type: 'cafe' };
@@ -142,20 +116,18 @@ export const getMapHtml = (lat: number, lng: number) => {
                   return distA - distB;
                 });
 
-                const top30 = filtered.slice(0, 30);
-                allPlaces = top30;
+                const top20 = filtered.slice(0, 20);
+                allPlaces = top20;
                 
-                const listForApp = top30.map(p => ({
+                const listForApp = top20.map(p => ({
                   name: p.name, vicinity: p.vicinity, rating: p.rating, place_id: p.place_id,
                   geometry: { location: { lat: p.geometry.location.lat(), lng: p.geometry.location.lng() } }
                 }));
                 logToApp('CAFE_LIST', listForApp);
 
-                for (let i = 0; i < top30.length; i++) {
-                  createMarker(top30[i], map);
+                for (let i = 0; i < top20.length; i++) {
+                  createMarker(top20[i], map);
                 }
-
-                fetchDetailsForPlaces(top30);
               }
             }
 

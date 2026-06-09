@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { Colors } from '../constants';
+import { useUserStore } from '../store/useUserStore';
 import { CustomInput } from '../components/CustomInput'; 
 import { PrimaryButton } from '../components/PrimaryButton';
 
@@ -125,8 +126,9 @@ export const BasicInfo = () => {
       } else {
         Alert.alert('저장 실패', data.error || '정보를 저장할 수 없습니다.');
       }
-    } catch (error) {
-      Alert.alert('오류', '네트워크 연결을 확인해 주세요.');
+    } catch (error: any) {
+      console.error('BasicInfo 저장 실패:', error?.message || error);
+      Alert.alert('저장 실패', `서버 연결에 실패했습니다.\n${error?.message || ''}`);
     } finally {
       setIsSaving(false);
     }

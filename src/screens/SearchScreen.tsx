@@ -37,11 +37,16 @@ export default function SearchScreen() {
   const userData = params.user || params; 
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   // 🌟 핵심 해결: 빈 배열 [] 만 넣으면 never[]로 추론되므로 타입을 명시함
   const [rawListData, setRawListData] = useState<CoffeeItem[]>([]); 
   const [filteredData, setFilteredData] = useState<CoffeeItem[]>([]); 
   
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const LIMIT = 30;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -55,29 +60,50 @@ export default function SearchScreen() {
     { label: '카페인', value: 'caffeine', unit: 'mg' },
   ];
 
-  // 서버에서 커피 리스트 불러오기
-  const fetchCoffeeList = async () => {
+  // 서버에서 커피 리스트 일부만 불러오기 (페이지네이션)
+  const fetchCoffeeList = async (pageNum: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
-      // URL 끝에 /가 중복되지 않도록 처리
       const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-      const response = await fetch(`${cleanUrl}/api/coffee/list`); 
-      
+      const response = await fetch(`${cleanUrl}/api/coffee/list?page=${pageNum}&limit=${LIMIT}`);
+
       const data = await response.json();
-      const list = Array.isArray(data) ? data : [];
-      
-      setRawListData(list);
-      setFilteredData(list);
+      let list: CoffeeItem[] = [];
+      if (Array.isArray(data)) {
+        list = data;
+        if (data.length < LIMIT) setHasMore(false);
+      } else if (data?.data && Array.isArray(data.data)) {
+        list = data.data;
+        setHasMore(pageNum * LIMIT < (data.total ?? list.length));
+      }
+
+      if (append) {
+        setRawListData(prev => [...prev, ...list]);
+      } else {
+        setRawListData(list);
+        setPage(1);
+      }
     } catch (error) {
       console.error("❌ 데이터 로딩 실패:", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchCoffeeList(nextPage, true);
     }
   };
 
   useEffect(() => {
-    fetchCoffeeList();
+    fetchCoffeeList(1, false);
   }, []);
 
   // 검색 및 필터링 로직 (성능을 위해 useMemo를 사용할 수도 있지만 useEffect로도 충분)
@@ -131,6 +157,12 @@ export default function SearchScreen() {
         <ScrollView 
           contentContainerStyle={styles.scrollArea} 
           showsVerticalScrollIndicator={false}
+          onMomentumScrollEnd={({ nativeEvent }) => {
+            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 60) {
+              handleLoadMore();
+            }
+          }}
         >
           {/* 검색 바 */}
           <SearchBar 

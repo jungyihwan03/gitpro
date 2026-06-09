@@ -8,7 +8,6 @@ import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors, Layout, BRAND_STYLES, getBrandInfo } from '../constants';
 import { getMapHtml } from '../mapHtml';
 import { useCafeStore } from '../store/useCafeStore';
-import { fetchPlaceDetails } from '../api';
 import { useFocusEffect } from '@react-navigation/native';
 
 import SearchBar from '../components/SearchBar';
@@ -117,24 +116,11 @@ export default function Map() {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'MARKER_CLICK') {
         const payload = data.payload;
-        console.log('=== MARKER_CLICK payload.phone ===', payload?.phone);
         setSelectedCafe(payload);
         const dist = payload && location
           ? getDistance(location.coords.latitude, location.coords.longitude, payload.geometry.location.lat, payload.geometry.location.lng)
           : undefined;
         setCafeStore(payload, dist);
-
-        if (payload?.place_id && !payload?.phone) {
-          console.log('=== No phone in MARKER_CLICK, fetching via REST ===');
-          fetchPlaceDetails(payload.place_id).then(details => {
-            console.log('=== REST phone result ===', details?.formatted_phone_number);
-            if (details?.formatted_phone_number) {
-              const updated = { ...payload, phone: details.formatted_phone_number };
-              setSelectedCafe(updated);
-              setCafeStore(updated, dist);
-            }
-          });
-        }
       } else if (data.type === 'CAFE_LIST') {
         setCafeList(data.payload || []);
       }

@@ -24,6 +24,8 @@ export const Login = () => {
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       offlineAccess: true, 
     });
+
+    GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true }).catch(() => {});
   }, []);
 
   const setUser = useUserStore((s) => s.setUser);
@@ -82,7 +84,13 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      await GoogleSignin.hasPlayServices();
+      try {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      } catch {
+        return;
+      }
+
+      await GoogleSignin.signOut();
       const userInfo = await GoogleSignin.signIn();
       
       if (!userInfo.data) {
