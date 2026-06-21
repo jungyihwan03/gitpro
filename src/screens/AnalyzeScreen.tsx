@@ -1,75 +1,141 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { BACKEND_API_URL } from '../constants';
 
+import NavHeader from '../components/NavHeader'; 
+import SourceChip from '../components/SourceChip';
+import PhotoPreviewScanner from '../components/PhotoPreviewScanner';
+import PulseDots from '../components/PulseDots';
+
 export default function AnalyzeScreen() {
-  const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { imageUri } = route.params;
+  const route = useRoute<any>();
+  const { imageUri, sourceType: st, user, selectedBrands } = route.params || {};
+  const sourceType = st || 'camera';
 
   useEffect(() => {
+    if (!imageUri) return;
     const uploadAndAnalyze = async () => {
       try {
-        // [1] 이미지 최적화
         const manipulatedImage = await ImageManipulator.manipulateAsync(
           imageUri,
           [{ resize: { width: 1200 } }],
           { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
         );
-
-        // [2] Base64 변환
         const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
           encoding: 'base64',
         });
-
-        // [3] 서버 전송
-        const response = await fetch(`${BACKEND_API_URL}/api/analyze-menu`, {
+        const cleanUrl = BACKEND_API_URL.endsWith('/') ? BACKEND_API_URL.slice(0, -1) : BACKEND_API_URL;
+        const response = await fetch(`${cleanUrl}/api/analyze-menu`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64 }),
+          body: JSON.stringify({ image: base64, selectedBrands: selectedBrands || [] }),
         });
-
         const result = await response.json();
 
         if (response.ok && result.length > 0) {
-          // ✅ 성공 시: 결과 화면으로 이동 (replace를 써서 대기화면을 스택에서 제거)
-          navigation.replace('AnalyzeResult', { 
-            menuData: result, 
-            analyzedImage: manipulatedImage.uri 
+          console.log("✅ 분석 성공:", JSON.stringify({ status: response.status, count: result.length, items: result.map((r: any) => ({ name: r.coffeeName, brand: r.brand, caffeine: r.caffeine, calories: r.calories })) }));
+
+          let enrichedData = result;
+          try {
+            const dbRes = await fetch(`${cleanUrl}/api/coffee/list`);
+            const dbData = await dbRes.json();
+            const dbList: any[] = Array.isArray(dbData) ? dbData : (dbData?.data || []);
+            console.log(`📦 DB 매칭용 커피 리스트: ${dbList.length}개`);
+
+            enrichedData = result.map((item: any) => {
+              const match = dbList.find((db: any) =>
+                db.coffeeName?.replace(/\s+/g, '') === item.coffeeName?.replace(/\s+/g, '') &&
+                db.brand?.replace(/\s+/g, '') === item.brand?.replace(/\s+/g, '')
+              );
+              if (match) {
+                console.log(`🔗 매칭 성공: ${item.coffeeName} → DB 데이터 적용 (카페인: ${match.caffeine}, 칼로리: ${match.calories})`);
+                return { ...item, caffeine: match.caffeine, calories: match.calories, protein: match.protein, sugar: match.sugar, emoji: match.emoji };
+              }
+              console.log(`⚠️ 매칭 실패: ${item.coffeeName} (${item.brand}) - DB에 없음`);
+              return item;
+            });
+          } catch (e) {
+            console.error("DB 리스트 조회 실패:", e);
+          }
+
+          navigation.replace('AnalyzeResult', {
+            menuData: enrichedData,
+            analyzedImage: manipulatedImage.uri,
+            user: user,
+            selectedBrands: selectedBrands,
           });
         } else {
-          // ❌ 데이터가 없거나 서버 응답 이상 시: 실패 화면으로 이동
-          navigation.replace('AnalyzeFail');
+          console.warn("분석 실패 사유:", { status: response.status, ok: response.ok, resultLength: result?.length, result });
+          navigation.replace('AnalyzeFail', { sourceType, user });
         }
       } catch (error) {
         console.error("분석 에러:", error);
-        navigation.replace('AnalyzeFail'); // ❌ 네트워크 에러 시 실패 화면으로 이동
+        navigation.replace('AnalyzeFail', { sourceType, user });
       }
     };
-
     uploadAndAnalyze();
   }, []);
 
   return (
     <View style={styles.container}>
-      {/* 사용자가 찍은 사진을 배경으로 살짝 보여주면 더 고급스럽습니다 */}
-      <Image source={{ uri: imageUri }} style={styles.bgImage} blurRadius={10} />
-      <View style={styles.overlay}>
-        <ActivityIndicator size="large" color="#8B2E3A" />
-        <Text style={styles.title}>메뉴판 분석 중...</Text>
-        <Text style={styles.subtitle}>AI가 메뉴와 카페인을 계산하고 있어요.</Text>
+      <StatusBar style="dark" />
+      <NavHeader 
+        title="AI 분석 중" 
+        onBack={() => navigation.goBack()} 
+      />
+
+      <View style={styles.main}>
+        <SourceChip type={sourceType} />
+        
+        <PhotoPreviewScanner imageUri={imageUri} />
+
+        <View style={styles.textContainer}>
+          <PulseDots />
+          <Text style={styles.title}>메뉴판을 분석하고 있어요</Text>
+          <Text style={styles.desc}>
+            AI가 메뉴를 인식하고 있어요.{'\n'}잠시만 기다려주세요.
+          </Text>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  bgImage: { ...StyleSheet.absoluteFillObject, opacity: 0.5 },
-  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { color: '#FFF', fontSize: 20, fontWeight: 'bold', marginTop: 20 },
-  subtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 10 }
+  container: {
+    flex: 1,
+    backgroundColor: '#F6F6F6',
+  },
+  main: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 80, 
+    gap: 36,
+  },
+  textContainer: {
+    alignItems: 'center',
+    gap: 14,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#111111',
+    lineHeight: 32,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  desc: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#999999',
+    lineHeight: 22,
+    textAlign: 'center',
+  },
 });

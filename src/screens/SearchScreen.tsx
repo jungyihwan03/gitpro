@@ -3,6 +3,7 @@ import {
   View, 
   Text, 
   StyleSheet, 
+  FlatList, 
   ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
@@ -48,7 +49,7 @@ export default function SearchScreen() {
   const LIMIT = 30;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [displayNutrient, setDisplayNutrient] = useState('calories');
 
@@ -79,6 +80,7 @@ export default function SearchScreen() {
         list = data.data;
         setHasMore(pageNum * LIMIT < (data.total ?? list.length));
       }
+      console.log(`📦 DB 커피 리스트: page=${pageNum}, 받은 개수=${list.length}, hasMore=${list.length >= LIMIT}, 첫 항목=${list[0]?.coffeeName || '없음'}`);
 
       if (append) {
         setRawListData(prev => [...prev, ...list]);
@@ -95,16 +97,22 @@ export default function SearchScreen() {
   };
 
   const handleLoadMore = () => {
-    if (!loadingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchCoffeeList(nextPage, true);
-    }
+    if (loadingMore || !hasMore || searchQuery || selectedBrands.length > 0 || selectedCategory) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchCoffeeList(nextPage, true);
   };
 
   useEffect(() => {
     fetchCoffeeList(1, false);
   }, []);
+
+  useEffect(() => {
+    if (route.params?.selectedBrands) {
+      setSelectedBrands(route.params.selectedBrands);
+      navigation.setParams({ selectedBrands: undefined });
+    }
+  }, [route.params?.selectedBrands]);
 
   // 검색 및 필터링 로직 (성능을 위해 useMemo를 사용할 수도 있지만 useEffect로도 충분)
   useEffect(() => {
@@ -120,9 +128,9 @@ export default function SearchScreen() {
       );
     }
 
-    // 브랜드 필터링
-    if (selectedBrand) {
-      result = result.filter(item => item.brand === selectedBrand);
+    // 브랜드 필터링 (다중 선택)
+    if (selectedBrands.length > 0) {
+      result = result.filter(item => selectedBrands.includes(item.brand));
     }
 
     // 카테고리 필터링
@@ -131,10 +139,16 @@ export default function SearchScreen() {
     }
 
     setFilteredData(result);
-  }, [searchQuery, selectedBrand, selectedCategory, rawListData]);
+  }, [searchQuery, selectedBrands, selectedCategory, rawListData]);
 
   const toggleBrand = (brand: string) => {
-    setSelectedBrand(prev => (prev === brand ? '' : brand));
+    setSelectedBrands(prev =>
+      prev.includes(brand) ? prev.filter(b => b !== brand) : [...prev, brand]
+    );
+  };
+
+  const handleBrandSelectScreen = () => {
+    navigation.navigate('SearchBrandSelect', { selectedBrands });
   };
 
   const toggleCategory = (category: string) => {
@@ -154,106 +168,109 @@ export default function SearchScreen() {
         {/* 네비게이션 헤더 */}
         <NavHeader title="메뉴 검색" onBack={() => navigation.goBack()} />
 
-        <ScrollView 
-          contentContainerStyle={styles.scrollArea} 
+        <FlatList
+          contentContainerStyle={styles.scrollArea}
           showsVerticalScrollIndicator={false}
-          onMomentumScrollEnd={({ nativeEvent }) => {
-            const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-            if (layoutMeasurement.height + contentOffset.y >= contentSize.height - 60) {
-              handleLoadMore();
-            }
-          }}
-        >
-          {/* 검색 바 */}
-          <SearchBar 
-            placeholder="메뉴를 검색해보세요" 
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          data={filteredData}
+          keyExtractor={(item) => item._id}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListHeaderComponent={
+            <View>
+              {/* 검색 바 */}
+              <SearchBar 
+                placeholder="메뉴를 검색해보세요" 
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
 
-          {/* 표시 정보 필터 (칼로리, 단백질, 카페인) */}
-          <View style={styles.filterSection}>
-            <Text style={styles.filterTitle}>표시 정보</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {nutrientTabs.map((tab) => (
-                <FilterChip 
-                  key={tab.value} 
-                  label={tab.label} 
-                  isSelected={displayNutrient === tab.value} 
-                  onPress={() => setDisplayNutrient(tab.value)} 
-                />
-              ))}
-            </ScrollView>
-          </View>
+              {/* 표시 정보 필터 (칼로리, 단백질, 카페인) */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterTitle}>표시 정보</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                  {nutrientTabs.map((tab) => (
+                    <FilterChip 
+                      key={tab.value} 
+                      label={tab.label} 
+                      isSelected={displayNutrient === tab.value} 
+                      onPress={() => setDisplayNutrient(tab.value)} 
+                    />
+                  ))}
+                </ScrollView>
+              </View>
 
-          {/* 브랜드 필터 */}
-          <View style={styles.filterSection}>
-            <View style={styles.filterHeader}>
-              <Text style={styles.filterTitle}>브랜드</Text>
-              <TouchableOpacity onPress={() => setSelectedBrand('')}>
-                <Text style={styles.resetBtn}>초기화</Text>
-              </TouchableOpacity>
+              {/* 브랜드 필터 */}
+              <View style={styles.filterSection}>
+                <View style={styles.filterHeader}>
+                  <Text style={styles.filterTitle}>브랜드</Text>
+                  <TouchableOpacity onPress={handleBrandSelectScreen}>
+                    <Text style={styles.resetBtn}>전체보기</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                  {brands.map((brand) => (
+                    <FilterChip 
+                      key={brand} 
+                      label={brand} 
+                      isSelected={selectedBrands.includes(brand)} 
+                      onPress={() => toggleBrand(brand)} 
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* 카테고리 필터 */}
+              <View style={styles.filterSection}>
+                <View style={styles.filterHeader}>
+                  <Text style={styles.filterTitle}>카테고리</Text>
+                  <TouchableOpacity onPress={() => setSelectedCategory('')}>
+                    <Text style={styles.resetBtn}>초기화</Text>
+                  </TouchableOpacity>
+                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+                  {categories.map((cat) => (
+                    <FilterChip 
+                      key={cat} 
+                      label={cat} 
+                      isSelected={selectedCategory === cat} 
+                      onPress={() => toggleCategory(cat)} 
+                    />
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* 검색 결과 타이틀 */}
+              <View style={styles.listSection}>
+                <Text style={styles.listTitle}>검색 결과 ({filteredData?.length || 0})</Text>
+              </View>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {brands.map((brand) => (
-                <FilterChip 
-                  key={brand} 
-                  label={brand} 
-                  isSelected={selectedBrand === brand} 
-                  onPress={() => toggleBrand(brand)} 
-                />
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* 카테고리 필터 */}
-          <View style={styles.filterSection}>
-            <View style={styles.filterHeader}>
-              <Text style={styles.filterTitle}>카테고리</Text>
-              <TouchableOpacity onPress={() => setSelectedCategory('')}>
-                <Text style={styles.resetBtn}>초기화</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
-              {categories.map((cat) => (
-                <FilterChip 
-                  key={cat} 
-                  label={cat} 
-                  isSelected={selectedCategory === cat} 
-                  onPress={() => toggleCategory(cat)} 
-                />
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* 검색 결과 리스트 */}
-          <View style={styles.listSection}>
-            <Text style={styles.listTitle}>검색 결과 ({filteredData?.length || 0})</Text>
-            {loading ? (
+          }
+          renderItem={({ item }) => (
+            <MenuCard 
+              imgEmoji={item.emoji || "☕"} 
+              brand={item.brand} 
+              name={item.coffeeName} 
+              kcal={getMetaText(item)} 
+              onPress={() => {
+                navigation.navigate('MenuDetail', { item, user: userData });
+              }}
+            />
+          )}
+          ListEmptyComponent={
+            loading ? (
               <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
             ) : (
-              filteredData && filteredData.length > 0 ? (
-                filteredData.map((item) => (
-                  <MenuCard 
-                    key={item._id}
-                    imgEmoji={item.emoji || "☕"} 
-                    brand={item.brand} 
-                    name={item.coffeeName} 
-                    kcal={getMetaText(item)} 
-                    onPress={() => {
-                      // 상세 페이지 이동 시 유저 정보를 안전하게 전달
-                      navigation.navigate('MenuDetail', { item, user: userData });
-                    }}
-                  />
-                ))
-              ) : (
-                <View style={styles.emptyWrap}>
-                  <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
-                </View>
-              )
-            )}
-          </View>
-        </ScrollView>
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyText}>검색 결과가 없습니다.</Text>
+              </View>
+            )
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginVertical: 20 }} />
+            ) : null
+          }
+        />
       </View>
     </View>
   );

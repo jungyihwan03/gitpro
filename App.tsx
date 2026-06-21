@@ -14,6 +14,7 @@ import { BasicInfo } from './src/screens/BasicInfo';
 import HomeScreen from './src/screens/HomeScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import SearchScreen from './src/screens/SearchScreen';
+import SearchBrandSelectScreen from './src/screens/SearchBrandSelectScreen';
 import BrandSelectScreen from './src/screens/BrandSelectScreen';
 import MenuDetailScreen from './src/screens/MenuDetailScreen';
 import MenuScannerCamera from './src/screens/MenuScannerCamera';
@@ -48,6 +49,7 @@ function MainAppStack({ route }: any) {
         <MainStack.Screen name="History" component={HistoryScreen} />
         <MainStack.Screen name="Map" component={Map} />
         <MainStack.Screen name="Search" component={SearchScreen} />
+        <MainStack.Screen name="SearchBrandSelect" component={SearchBrandSelectScreen} />
         <MainStack.Screen name="BrandSelect" component={BrandSelectScreen} />
         <MainStack.Screen name="CafeDetail" component={CafeDetailScreen} />
         <MainStack.Screen name="CafeMenu" component={CafeMenuScreen} />

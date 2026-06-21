@@ -83,6 +83,7 @@ export default function Map() {
 
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       (async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
@@ -90,24 +91,13 @@ export default function Map() {
           return;
         }
         const currentLoc = await Location.getCurrentPositionAsync({});
+        if (cancelled) return;
 
-        const last = lastFetchRef.current;
-        const now = Date.now();
-        const FIVE_MIN = 5 * 60 * 1000;
-        const DIST_THRESHOLD = 500;
-
-        let shouldRefetch = !location;
-        if (last && location) {
-          const elapsed = now - last.time;
-          const dist = getDistanceMeters(last.lat, last.lng, currentLoc.coords.latitude, currentLoc.coords.longitude);
-          if (elapsed <= FIVE_MIN && dist <= DIST_THRESHOLD) shouldRefetch = false;
-        }
-
-        if (shouldRefetch) {
-          lastFetchRef.current = { time: now, lat: currentLoc.coords.latitude, lng: currentLoc.coords.longitude };
-          setLocation(currentLoc);
-        }
+        setRefreshKey(k => k + 1);
+        lastFetchRef.current = { time: Date.now(), lat: currentLoc.coords.latitude, lng: currentLoc.coords.longitude };
+        setLocation(currentLoc);
       })();
+      return () => { cancelled = true; };
     }, [])
   );
 

@@ -1,16 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // 필수 라이브러리
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 // SDK 54 대응용 legacy 모듈
-import * as FileSystem from 'expo-file-system/legacy';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { useNavigation, useRoute } from '@react-navigation/native';
-
-import { BACKEND_API_URL } from '../constants';
 import CameraTopBar from '../components/CameraTopBar';
 import CameraBottomBar from '../components/CameraBottomBar';
 import ScannerGuide from '../components/ScannerGuide';
@@ -26,6 +22,7 @@ export default function MenuScannerCamera() {
   const [facing, setFacing] = useState<'back' | 'front'>('back');
   const [flash, setFlash] = useState<'off' | 'on'>('off');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sourceType, setSourceType] = useState<'camera' | 'gallery'>('camera');
   const cameraRef = useRef<any>(null);
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -44,62 +41,14 @@ export default function MenuScannerCamera() {
     );
   }
 
-  /**
-   * 이미지 분석 함수
-   * @param uri 촬영되거나 선택된 이미지의 로컬 경로
-   */
-  const analyzeMenuImage = async (uri: string) => {
-    try {
-      setIsAnalyzing(true);
-      console.log("📸 1. 이미지 처리 시작 - 선택된 브랜드:", selectedBrands);
-
-      // [1] 이미지 최적화 (서버 부하 감소 및 분석 속도 향상)
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 1200 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
-      );
-
-      // [2] Base64 변환
-      const base64 = await FileSystem.readAsStringAsync(manipulatedImage.uri, {
-        encoding: 'base64',
-      });
-
-      // [3] 서버 전송 (이미지와 선택된 브랜드 리스트를 함께 전송)
-      const cleanUrl = BACKEND_API_URL.endsWith('/') ? BACKEND_API_URL.slice(0, -1) : BACKEND_API_URL;
-      
-      const response = await fetch(`${cleanUrl}/api/analyze-menu`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64,
-          selectedBrands: selectedBrands // 🌟 서버에서 DB 매칭 시 사용할 브랜드 정보
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ 4. 분석 데이터 수신 완료:", result.length, "개 메뉴");
-
-      // [4] 결과 화면으로 이동
-      // replace를 사용하여 스택을 교체함으로써 뒤로가기 시 다시 분석 중 화면이 나오는 것을 방지합니다.
-      navigation.replace('AnalyzeResult', {
-        menuData: result,
-        analyzedImage: manipulatedImage.uri,
-        user: userData, // 🌟 저장 시 필요한 유저 정보
-        selectedBrands: selectedBrands // 🌟 UI 방어 로직을 위해 브랜드 정보도 전달
-      });
-
-    } catch (error: any) {
-      console.error('⚠️ 분석 에러 상세:', error);
-      Alert.alert("분석 실패", "메뉴판을 분석하는 중 오류가 발생했습니다.");
-      navigation.navigate('AnalyzeFail', { sourceType: 'camera', user: userData });
-    } finally {
-      setIsAnalyzing(false);
-    }
+  const analyzeMenuImage = (uri: string) => {
+    setIsAnalyzing(true);
+    navigation.replace('Analyze', {
+      imageUri: uri,
+      sourceType: sourceType,
+      user: userData,
+      selectedBrands: selectedBrands,
+    });
   };
 
   /**
@@ -108,7 +57,7 @@ export default function MenuScannerCamera() {
   const handleShutter = async () => {
     if (cameraRef.current && !isAnalyzing) {
       try {
-        // 안드로이드 무음 촬영 시도
+        setSourceType('camera');
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.7,
           mute: true 
@@ -120,11 +69,9 @@ export default function MenuScannerCamera() {
     }
   };
 
-  /**
-   * 갤러리 선택 버튼 클릭 시 호출
-   */
   const handleGallery = async () => {
     if (isAnalyzing) return;
+    setSourceType('gallery');
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,

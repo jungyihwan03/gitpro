@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, Image, StyleSheet, Animated } from 'react-native';
 
-export default function PhotoPreviewScanner() {
+export default function PhotoPreviewScanner({ imageUri }: { imageUri?: string }) {
   const scanAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -16,24 +16,27 @@ export default function PhotoPreviewScanner() {
 
   const translateY = scanAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 220], // 컴포넌트 높이만큼 이동
+    outputRange: [0, 220],
   });
 
   const opacity = scanAnim.interpolate({
     inputRange: [0, 0.05, 0.95, 1],
-    outputRange: [0, 1, 1, 0], // 시작과 끝에서 자연스럽게 사라짐
+    outputRange: [0, 1, 1, 0],
   });
 
   return (
     <View style={styles.previewContainer}>
-      {/* ── 가짜 메뉴판 데이터 (추후 실제 이미지 URI를 Image 태그로 띄울 영역) ── */}
-      <View style={styles.menuBoard}>
-        <Text style={styles.mbTitle}>☕ COFFEE MENU</Text>
-        <View style={styles.mbRow}><Text style={styles.mbName}>아이스 아메리카노</Text><Text style={styles.mbPrice}>4,500원</Text></View>
-        <View style={styles.mbRow}><Text style={styles.mbName}>카페 라떼</Text><Text style={styles.mbPrice}>5,000원</Text></View>
-        <View style={styles.mbRow}><Text style={styles.mbName}>카라멜 마키아또</Text><Text style={styles.mbPrice}>5,800원</Text></View>
-        <View style={styles.mbRow}><Text style={styles.mbName}>콜드 브루</Text><Text style={styles.mbPrice}>5,500원</Text></View>
-      </View>
+      {imageUri ? (
+        <Image source={{ uri: imageUri }} style={styles.capturedImage} />
+      ) : (
+        <View style={styles.menuBoard}>
+          <Text style={styles.mbTitle}>☕ COFFEE MENU</Text>
+          <View style={styles.mbRow}><Text style={styles.mbName}>아이스 아메리카노</Text><Text style={styles.mbPrice}>4,500원</Text></View>
+          <View style={styles.mbRow}><Text style={styles.mbName}>카페 라떼</Text><Text style={styles.mbPrice}>5,000원</Text></View>
+          <View style={styles.mbRow}><Text style={styles.mbName}>카라멜 마키아또</Text><Text style={styles.mbPrice}>5,800원</Text></View>
+          <View style={styles.mbRow}><Text style={styles.mbName}>콜드 브루</Text><Text style={styles.mbPrice}>5,500원</Text></View>
+        </View>
+      )}
 
       {/* ── 붉은 오버레이 및 모서리 프레임 ── */}
       <View style={styles.scanOverlay} />
@@ -76,6 +79,7 @@ const styles = StyleSheet.create({
   mbName: { fontSize: 10, color: 'rgba(255,255,255,0.4)' },
   mbPrice: { fontSize: 10, color: 'rgba(255,255,255,0.28)' },
   
+  capturedImage: { width: '100%', height: '100%', position: 'absolute', resizeMode: 'cover' },
   scanOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(139,46,58,0.06)' },
   
   scanLine: {
