@@ -156,20 +156,17 @@ export const Login = () => {
               onChangeText={setPassword} 
               isPassword 
             />
-            
-            <View style={styles.findPwWrap}>
-              <TouchableOpacity activeOpacity={0.6} style={styles.linkTouch} onPress={() => navigation.navigate('FindId')}>
-                <Text style={styles.findPwLink}></Text>
-              </TouchableOpacity>
-              <TouchableOpacity activeOpacity={0.6} style={styles.linkTouch} onPress={() => navigation.navigate('FindPassword')}>
-                <Text style={styles.findPwLink}>비밀번호 찾기</Text>
-              </TouchableOpacity>
-            </View>
 
             <PrimaryButton 
               title={isLoading ? "로그인 중..." : "로그인"} 
               onPress={handleLocalLogin} 
             />
+
+            <View style={styles.findPwWrap}>
+              <TouchableOpacity activeOpacity={0.6} style={styles.linkTouch} onPress={() => navigation.navigate('FindPassword')}>
+                <Text style={styles.findPwLink}>비밀번호 찾기</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.dividerSection}>
@@ -230,7 +227,7 @@ const styles = StyleSheet.create({
   appTitle: { fontSize: 24, fontWeight: '700', color: Colors.primary, lineHeight: 32 },
   appSubtitle: { fontSize: 12, fontWeight: '400', color: Colors.text2, lineHeight: 20, textAlign: 'center' },
   formCard: { marginHorizontal: 24, backgroundColor: Colors.surface, borderRadius: Layout.radiusLg, padding: 24, gap: 16, ...Layout.shadow1 },
-  findPwWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -4 },
+  findPwWrap: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: -4 },
   linkTouch: { height: 40, justifyContent: 'center', paddingHorizontal: 2 },
   findPwLink: { fontSize: 13, fontWeight: '500', color: Colors.primary },
   dividerSection: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 20 },
