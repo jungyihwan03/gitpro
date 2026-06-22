@@ -12,8 +12,8 @@ import { ChartCard } from '../components/StatisticsScreen/ChartCard';
 import { RankingItem } from '../components/StatisticsScreen/RankingItem';
 
 const SEGMENTS = ['일간', '주간', '월간'];
-const CHIPS = ['칼로리', '단백질', '카페인'];
-const NUTRIENT_KEY: Record<string, string> = { '칼로리': 'calories', '단백질': 'protein', '카페인': 'caffeine' };
+const CHIPS = ['칼로리', '당', '단백질', '카페인'];
+const NUTRIENT_KEY: Record<string, string> = { '칼로리': 'calories', '당': 'sugar', '단백질': 'protein', '카페인': 'caffeine' };
 
 export const StatisticsScreen = () => {
   const route = useRoute<any>();

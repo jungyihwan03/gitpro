@@ -21,6 +21,10 @@ export const ChartCard = ({ data, chips, activeChip, onChipChange }: ChartCardPr
     <View style={styles.chartCard}>
       <View style={styles.chartHeaderRow}>
         <Text style={styles.chartTitle}>시간별 {activeChip} 분석</Text>
+        {/* ✨ 사라졌던 평균과 비교 버튼 추가 (UI만 렌더링) ✨ */}
+        <TouchableOpacity activeOpacity={0.6} style={styles.btnAvgCompare}>
+          <Text style={styles.btnAvgCompareText}>평균과 비교</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.chipRow}>
@@ -82,8 +86,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.text1,
   },
+  // ✨ 평균과 비교 버튼 스타일 추가 ✨
+  btnAvgCompare: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: Layout.radiusFull,
+    borderWidth: 1,
+    borderColor: Colors.alertBorder, // 기존 UI 디자인 유지
+    backgroundColor: Colors.alertBg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnAvgCompareText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
   chipRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 8,
     paddingBottom: 8,
   },
