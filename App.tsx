@@ -28,6 +28,7 @@ import { CafeReviewScreen } from './src/screens/CafeReviewScreen';
 import { CafeMyRecordScreen } from './src/screens/CafeMyRecordScreen';
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
 import { CompareScreen } from './src/screens/CompareScreen';
+import DrinkRankingScreen from './src/screens/DrinkRankingScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProfileDetailScreen } from './src/screens/ProfileDetailScreen';
 
