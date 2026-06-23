@@ -14,15 +14,15 @@ interface ChartCardProps {
   chips: string[];
   activeChip: string;
   onChipChange: (chip: string) => void;
+  onComparePress?: () => void;
 }
 
-export const ChartCard = ({ data, chips, activeChip, onChipChange }: ChartCardProps) => {
+export const ChartCard = ({ data, chips, activeChip, onChipChange, onComparePress }: ChartCardProps) => {
   return (
     <View style={styles.chartCard}>
       <View style={styles.chartHeaderRow}>
         <Text style={styles.chartTitle}>시간별 {activeChip} 분석</Text>
-        {/* ✨ 사라졌던 평균과 비교 버튼 추가 (UI만 렌더링) ✨ */}
-        <TouchableOpacity activeOpacity={0.6} style={styles.btnAvgCompare}>
+        <TouchableOpacity activeOpacity={0.6} style={styles.btnAvgCompare} onPress={onComparePress}>
           <Text style={styles.btnAvgCompareText}>평균과 비교</Text>
         </TouchableOpacity>
       </View>

@@ -62,6 +62,8 @@ function MainAppStack({ route }: any) {
         <MainStack.Screen name="Statistics" component={StatisticsScreen} />
         <MainStack.Screen name="Settings" component={SettingsScreen} />
         <MainStack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
+        <MainStack.Screen name="Compare" component={CompareScreen} />
+        <MainStack.Screen name="DrinkRanking" component={DrinkRankingScreen} />
       </MainStack.Navigator>
     </SafeAreaView>
   );

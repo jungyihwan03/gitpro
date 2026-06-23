@@ -186,13 +186,13 @@ export const StatisticsScreen = () => {
           <SummaryCard icon="⏰" label="마지막 섭취" value={lastIntakeTime} flexWeight={1} />
         </View>
 
-        {hourlyData.length > 0 && <ChartCard data={hourlyData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} />}
+        {hourlyData.length > 0 && <ChartCard data={hourlyData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} onComparePress={() => navigation.navigate('Compare')} />}
 
         {rankings.length > 0 && (
           <View style={styles.rankingSection}>
             <View style={styles.rankingHeader}>
               <Text style={styles.rankingTitle}>많이 먹은 메뉴 랭킹</Text>
-              <TouchableOpacity activeOpacity={0.6} onPress={() => navigation.navigate('History', { user: userData })}>
+              <TouchableOpacity activeOpacity={0.6} onPress={() => navigation.navigate('DrinkRanking', { user: userData })}>
                 <Text style={styles.rankingLink}>전체보기</Text>
               </TouchableOpacity>
             </View>
