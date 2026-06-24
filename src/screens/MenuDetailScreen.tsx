@@ -61,18 +61,11 @@ export default function MenuDetailScreen() {
       });
 
       if (response.ok) {
-      Alert.alert("기록 완료", "오늘의 섭취 목록에 추가되었습니다.", [
-        { 
-          text: "확인", 
-          onPress: () => {
-            // 🌟 [핵심 수정] 홈으로 돌아갈 때, 현재 페이지가 들고 있던 user 정보를 다시 넘겨줍니다.
-            navigation.navigate('MainTabs', { 
-              screen: 'Home',
-              params: { user: user } // 이 부분이 빠지면 홈에서 유저 ID를 잃어버립니다!
-            }); 
-          }
-        }
-      ]);
+        navigation.navigate('RecordComplete', {
+          coffeeName: item?.coffeeName || '메뉴',
+          calories: item?.calories || 0,
+          user: user,
+        });
     }
     } catch (error) {
       Alert.alert("오류", "서버와 통신할 수 없습니다.");

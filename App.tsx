@@ -29,6 +29,7 @@ import { CafeMyRecordScreen } from './src/screens/CafeMyRecordScreen';
 import { StatisticsScreen } from './src/screens/StatisticsScreen';
 import { CompareScreen } from './src/screens/CompareScreen';
 import DrinkRankingScreen from './src/screens/DrinkRankingScreen';
+import RecordCompleteScreen from './src/screens/RecordCompleteScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProfileDetailScreen } from './src/screens/ProfileDetailScreen';
 
@@ -64,6 +65,7 @@ function MainAppStack({ route }: any) {
         <MainStack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
         <MainStack.Screen name="Compare" component={CompareScreen} />
         <MainStack.Screen name="DrinkRanking" component={DrinkRankingScreen} />
+        <MainStack.Screen name="RecordComplete" component={RecordCompleteScreen} />
       </MainStack.Navigator>
     </SafeAreaView>
   );
