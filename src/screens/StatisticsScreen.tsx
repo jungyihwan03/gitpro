@@ -186,7 +186,7 @@ export const StatisticsScreen = () => {
           <SummaryCard icon="⏰" label="마지막 섭취" value={lastIntakeTime} flexWeight={1} />
         </View>
 
-        {hourlyData.length > 0 && <ChartCard data={hourlyData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} onComparePress={() => navigation.navigate('Compare')} />}
+        {hourlyData.length > 0 && <ChartCard data={hourlyData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} onComparePress={() => navigation.navigate('Compare', { user: userData })} />}
 
         {rankings.length > 0 && (
           <View style={styles.rankingSection}>

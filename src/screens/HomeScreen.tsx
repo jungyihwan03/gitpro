@@ -59,7 +59,7 @@ export default function HomeScreen() {
     }
   }
 
-  // 3. 데이터 가져오기 (무한 로딩 방지 로직 적용)
+  // 3. 데이터 가져오기 (로컬 타임존 기준 오늘 데이터만 필터)
   const fetchTodayData = async () => {
     if (!userId) {
       console.log("❌ 유저 ID를 찾을 수 없어 데이터를 불러오지 못합니다.");
@@ -69,12 +69,29 @@ export default function HomeScreen() {
 
     try {
       const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
-      const response = await fetch(`${backendUrl}/api/intake/today/${userId}`);
+      const response = await fetch(`${backendUrl}/api/intake/all/${userId}`);
       const data = await response.json();
       
       if (response.ok) {
-        setStats(data.totals || { caffeine: 0, calories: 0, protein: 0, sugar: 0 });
-        setTimeline(data.timeline || []);
+        const now = new Date();
+        const localStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const localEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+        const allLogs: any[] = data.timeline || [];
+        const todayLogs = allLogs.filter((log: any) => {
+          const d = new Date(log.date);
+          return d >= localStart && d < localEnd;
+        });
+
+        const totals = todayLogs.reduce((acc: any, cur: any) => ({
+          caffeine: acc.caffeine + (Number(cur.caffeine) || 0),
+          calories: acc.calories + (Number(cur.calories) || 0),
+          protein: acc.protein + (Number(cur.protein) || 0),
+          sugar: acc.sugar + (Number(cur.sugar) || 0),
+        }), { caffeine: 0, calories: 0, protein: 0, sugar: 0 });
+
+        setStats(totals);
+        setTimeline(todayLogs);
       }
     } catch (error) {
       console.error("📡 데이터 로딩 실패:", error);

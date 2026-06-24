@@ -12,19 +12,22 @@ import { ComparisonChartCard } from '../components/CompareScreen.tsx/ComparisonC
 import { AnalysisCard } from '../components/CompareScreen.tsx/AnalysisCard';
 import { FilterBottomSheet } from '../components/CompareScreen.tsx/FilterBottomSheet';
 
-const AVG_DATA: Record<string, { calories: number; sugar: number; protein: number; caffeine: number }> = {
-  '남성_10대': { calories: 2200, sugar: 40, protein: 70, caffeine: 120 },
-  '남성_20대': { calories: 2400, sugar: 45, protein: 75, caffeine: 160 },
-  '남성_30대': { calories: 2300, sugar: 42, protein: 72, caffeine: 180 },
-  '남성_40대': { calories: 2100, sugar: 38, protein: 68, caffeine: 170 },
-  '남성_50대': { calories: 2000, sugar: 35, protein: 65, caffeine: 150 },
-  '남성_60대 이상': { calories: 1900, sugar: 32, protein: 60, caffeine: 120 },
-  '여성_10대': { calories: 1800, sugar: 35, protein: 55, caffeine: 100 },
-  '여성_20대': { calories: 2000, sugar: 38, protein: 58, caffeine: 140 },
-  '여성_30대': { calories: 1900, sugar: 35, protein: 55, caffeine: 150 },
-  '여성_40대': { calories: 1800, sugar: 33, protein: 53, caffeine: 140 },
-  '여성_50대': { calories: 1700, sugar: 30, protein: 50, caffeine: 120 },
-  '여성_60대 이상': { calories: 1600, sugar: 28, protein: 48, caffeine: 100 },
+const GENDER_MAP: Record<string, string> = { '남성': 'M', '여성': 'F' };
+const AGE_MAP: Record<string, number> = { '10대': 10, '20대': 20, '30대': 30, '40대': 40, '50대': 50, '60대 이상': 60 };
+
+const getAgeGroup = (age: number): string => {
+  if (age >= 60) return '60대 이상';
+  if (age >= 50) return '50대';
+  if (age >= 40) return '40대';
+  if (age >= 30) return '30대';
+  if (age >= 20) return '20대';
+  return '10대';
+};
+
+const getGenderLabel = (gender: string): string => {
+  if (gender === 'M') return '남성';
+  if (gender === 'F') return '여성';
+  return '남성';
 };
 
 export const CompareScreen = () => {
@@ -34,19 +37,29 @@ export const CompareScreen = () => {
   const userData = params.user || params;
   const userId = userData._id;
 
+  const initialGender = userData.gender ? getGenderLabel(userData.gender) : '남성';
+  const initialAge = userData.age ? getAgeGroup(Number(userData.age)) : '30대';
+
   const [isFilterVisible, setIsFilterVisible] = useState(false);
-  const [currentFilter, setCurrentFilter] = useState({ gender: '남성', age: '30대' });
+  const [currentFilter, setCurrentFilter] = useState({ gender: initialGender, age: initialAge });
   const [loading, setLoading] = useState(true);
   const [myTotals, setMyTotals] = useState({ calories: 0, sugar: 0, protein: 0, caffeine: 0 });
+  const [avgTotals, setAvgTotals] = useState({ calories: 0, sugar: 0, protein: 0, caffeine: 0 });
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+  const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
 
   useEffect(() => {
-    const fetchMyData = async () => {
+    const fetchData = async () => {
       if (!userId) { setLoading(false); return; }
       try {
-        const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
-        const res = await fetch(`${backendUrl}/api/intake/all/${userId}`);
-        const data = await res.json();
-        const timeline: any[] = data.timeline || [];
+        const [myRes, avgRes] = await Promise.all([
+          fetch(`${cleanUrl}/api/intake/all/${userId}`),
+          fetch(`${cleanUrl}/api/intake/average?gender=${GENDER_MAP[currentFilter.gender]}&age=${AGE_MAP[currentFilter.age]}`),
+        ]);
+        const myData = await myRes.json();
+        const avgData = await avgRes.json();
+        const timeline: any[] = myData.timeline || [];
         const totals = timeline.reduce((acc: any, item: any) => ({
           calories: acc.calories + (Number(item.calories) || 0),
           sugar: acc.sugar + (Number(item.sugar) || 0),
@@ -54,17 +67,22 @@ export const CompareScreen = () => {
           caffeine: acc.caffeine + (Number(item.caffeine) || 0),
         }), { calories: 0, sugar: 0, protein: 0, caffeine: 0 });
         setMyTotals(totals);
+        setAvgTotals({
+          calories: avgData.avgCalories || 0,
+          sugar: avgData.avgSugar || 0,
+          protein: avgData.avgProtein || 0,
+          caffeine: avgData.avgCaffeine || 0,
+        });
       } catch (e) {
         console.error('데이터 로딩 실패:', e);
       } finally {
         setLoading(false);
       }
     };
-    fetchMyData();
-  }, [userId]);
+    fetchData();
+  }, [userId, currentFilter]);
 
-  const avgKey = `${currentFilter.gender}_${currentFilter.age}`;
-  const avg = AVG_DATA[avgKey] || AVG_DATA['남성_30대'];
+  const avg = avgTotals;
 
   const compare = (my: number, avgVal: number) => {
     if (my > avgVal) return 'HIGHER';
@@ -93,6 +111,8 @@ export const CompareScreen = () => {
           onOpenFilter={() => setIsFilterVisible(true)}
           filterGender={currentFilter.gender}
           filterAge={currentFilter.age}
+          myTotals={myTotals}
+          avgTotals={avgTotals}
         />
 
         <View style={styles.analysisSection}>

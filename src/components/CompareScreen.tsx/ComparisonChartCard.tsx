@@ -20,18 +20,28 @@ const BarPair = ({ label, meVal, avgVal, meHeight, avgHeight }: any) => (
 
 interface ComparisonChartCardProps {
   onOpenFilter: () => void;
-  // 선택된 필터 값을 표시하고 싶다면 prop으로 받아오면 됩니다.
   filterGender: string; 
   filterAge: string;
+  myTotals: { calories: number; sugar: number; protein: number; caffeine: number };
+  avgTotals: { calories: number; sugar: number; protein: number; caffeine: number };
 }
 
-export const ComparisonChartCard = ({ onOpenFilter, filterGender, filterAge }: ComparisonChartCardProps) => {
+const formatVal = (v: number) => v.toLocaleString();
+
+export const ComparisonChartCard = ({ onOpenFilter, filterGender, filterAge, myTotals, avgTotals }: ComparisonChartCardProps) => {
+  const items = [
+    { label: '칼로리', me: myTotals.calories, avg: avgTotals.calories, unit: '' },
+    { label: '당류',   me: myTotals.sugar,    avg: avgTotals.sugar,    unit: 'g' },
+    { label: '단백질', me: myTotals.protein,  avg: avgTotals.protein,  unit: 'g' },
+    { label: '카페인', me: myTotals.caffeine, avg: avgTotals.caffeine, unit: 'mg' },
+  ];
+  const maxVal = Math.max(...items.flatMap(i => [i.me, i.avg]), 1);
+  const maxBarH = 180;
+
   return (
     <View style={styles.chartCard}>
-      {/* 헤더 (제목 + 필터 버튼) */}
       <View style={styles.chartHeaderRow}>
         <Text style={styles.chartTitle}>{filterAge} {filterGender} 평균과 비교</Text>
-        {/* 👇 온프레스 이벤트 연결! */}
         <TouchableOpacity activeOpacity={0.7} style={styles.btnFilter} onPress={onOpenFilter}>
           <Svg width="14" height="11" viewBox="0 0 14 11" fill="none">
             <Path d="M0 1h14M2.5 5.5h9M5 10h4" stroke={Colors.primary} strokeWidth="1.5" strokeLinecap="round"/>
@@ -40,7 +50,6 @@ export const ComparisonChartCard = ({ onOpenFilter, filterGender, filterAge }: C
         </TouchableOpacity>
       </View>
 
-      {/* 범례 */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, styles.legendDotMe]} />
@@ -52,9 +61,7 @@ export const ComparisonChartCard = ({ onOpenFilter, filterGender, filterAge }: C
         </View>
       </View>
 
-      {/* 차트 영역 */}
       <View style={styles.chartArea}>
-        {/* 가이드라인 (배경 점선) */}
         <View style={styles.chartGuidelines} pointerEvents="none">
           <View style={styles.guideline} />
           <View style={styles.guideline} />
@@ -62,11 +69,16 @@ export const ComparisonChartCard = ({ onOpenFilter, filterGender, filterAge }: C
           <View style={styles.guideline} />
         </View>
 
-        {/* 막대 그래프들 (🌟 카페인 추가됨) */}
-        <BarPair label="칼로리" meVal="1,800" avgVal="2,100" meHeight={137} avgHeight={160} />
-        <BarPair label="당류"   meVal="45g"   avgVal="38g"   meHeight={160} avgHeight={135} />
-        <BarPair label="단백질" meVal="52g"   avgVal="65g"   meHeight={128} avgHeight={160} />
-        <BarPair label="카페인" meVal="220mg" avgVal="150mg" meHeight={150} avgHeight={110} />
+        {items.map(item => (
+          <BarPair
+            key={item.label}
+            label={item.label}
+            meVal={`${formatVal(item.me)}${item.unit}`}
+            avgVal={`${formatVal(item.avg)}${item.unit}`}
+            meHeight={Math.max((item.me / maxVal) * maxBarH, 4)}
+            avgHeight={Math.max((item.avg / maxVal) * maxBarH, 4)}
+          />
+        ))}
       </View>
     </View>
   );
