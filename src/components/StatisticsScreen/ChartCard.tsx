@@ -21,7 +21,7 @@ export const ChartCard = ({ data, chips, activeChip, onChipChange, onComparePres
   return (
     <View style={styles.chartCard}>
       <View style={styles.chartHeaderRow}>
-        <Text style={styles.chartTitle}>시간별 {activeChip} 분석</Text>
+        <Text style={styles.chartTitle}>{activeChip} 분석</Text>
         <TouchableOpacity activeOpacity={0.6} style={styles.btnAvgCompare} onPress={onComparePress}>
           <Text style={styles.btnAvgCompareText}>평균과 비교</Text>
         </TouchableOpacity>

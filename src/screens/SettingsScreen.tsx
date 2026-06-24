@@ -124,6 +124,7 @@ export const SettingsScreen = ({ navigation }: any) => {
               </Svg>
             }
             trailingElement={<ChevronIcon />}
+            onPress={() => navigation.push('FavoriteList', { targetType: 'menu', user: userData })}
           />
           <ListItem 
             headline="즐겨찾기에 추가한 카페"
@@ -135,6 +136,31 @@ export const SettingsScreen = ({ navigation }: any) => {
               </Svg>
             }
             trailingElement={<ChevronIcon />}
+            onPress={() => navigation.push('FavoriteList', { targetType: 'cafe', user: userData })}
+          />
+        </View>
+
+        {/* ②-2 내가 추가한 카페 */}
+        <SectionHeader 
+          title="내 카페" 
+          icon={
+            <Svg width="20" height="20" viewBox="0 0 24 24">
+              <Path d="M20 4H4v2l8 5 8-5V4zM4 11v7a2 2 0 002 2h12a2 2 0 002-2v-7l-8 5-8-5z" fill={Colors.text2} />
+            </Svg>
+          } 
+        />
+        <View style={styles.listCard}>
+          <ListItem 
+            headline="내가 추가한 카페"
+            supporting="직접 등록한 카페 관리"
+            isLast={true}
+            leadingIcon={
+              <Svg width="20" height="20" viewBox="0 0 24 24">
+                <Path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" fill={Colors.text2} />
+              </Svg>
+            }
+            trailingElement={<ChevronIcon />}
+            onPress={() => navigation.push('MyCustomCafes', { user: userData })}
           />
         </View>
 

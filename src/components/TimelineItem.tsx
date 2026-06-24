@@ -8,10 +8,11 @@ interface TimelineItemProps {
   time: string;
   kcal: string;
   isLast?: boolean;
-  isPast?: boolean; // ✨ 추가: 어제/과거 내역 여부
+  isPast?: boolean;
+  onPress?: () => void;
 }
 
-export default function TimelineItem({ name, time, kcal, isLast = false, isPast = false }: TimelineItemProps) {
+export default function TimelineItem({ name, time, kcal, isLast = false, isPast = false, onPress }: TimelineItemProps) {
   return (
     <View style={styles.timelineItem}>
       {/* 마지막 아이템이 아닐 때만 세로선 표시 */}
@@ -20,7 +21,7 @@ export default function TimelineItem({ name, time, kcal, isLast = false, isPast 
       {/* ✨ isPast가 true면 과거 내역 스타일(timelineDotPast) 적용 */}
       <View style={[styles.timelineDot, isPast && styles.timelineDotPast]} />
       
-      <TouchableOpacity activeOpacity={0.6} style={styles.timelineCard}>
+      <TouchableOpacity activeOpacity={0.6} style={styles.timelineCard} onPress={onPress}>
         <View>
           <Text style={[styles.timelineName, isPast && styles.timelineNamePast]}>{name}</Text>
           <Text style={styles.timelineTime}>{time}</Text>

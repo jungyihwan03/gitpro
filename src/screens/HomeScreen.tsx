@@ -119,6 +119,8 @@ export default function HomeScreen() {
   if (progressPercent > 1) progressPercent = 1; 
   const strokeDashoffset = circleCircumference * (1 - progressPercent);
 
+  const caffeinePercent = Math.min(stats.caffeine / 400, 1);
+
   // 안드로이드 뒤로가기
   useEffect(() => {
     const backAction = () => {
@@ -214,9 +216,9 @@ export default function HomeScreen() {
 
         <AlertCard 
           title="섭취 알림" 
-          bodyMain="권장 칼로리의" 
-          highlightText={`${Math.round(progressPercent * 100)}%`} 
-          bodySub="를 도달했습니다." 
+          bodyMain="권장 카페인의" 
+          highlightText={`${Math.round(caffeinePercent * 100)}%`} 
+          bodySub="를 섭취했습니다." 
         />
         
         <View style={styles.timelineSection}>
@@ -238,6 +240,7 @@ export default function HomeScreen() {
                   time={new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
                   kcal={`${log.calories}kcal`} 
                   isLast={index === timeline.length - 1 || index === 4}
+                  onPress={() => navigation.navigate('MenuDetail', { item: log, user: userData, fromTimeline: true })}
                 />
               ))
             ) : (

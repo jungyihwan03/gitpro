@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Layout } from '../../constants';
 import DrinkIcon from './DrinkIcon';
 
@@ -10,10 +10,12 @@ interface RankItemProps {
     totalMg: string;
     count: number;
     type: string;
+    sourceItem?: any;
   };
+  onPress?: () => void;
 }
 
-export default function RankItem({ item }: RankItemProps) {
+export default function RankItem({ item, onPress }: RankItemProps) {
   const isRank1 = item.id === 1;
 
   // 순위별 뱃지 색상 정의
@@ -23,7 +25,7 @@ export default function RankItem({ item }: RankItemProps) {
   else if (item.id === 3) badgeBg = '#CD7F32';
 
   return (
-    <View style={[styles.rankItem, isRank1 && styles.rankItemFirst]}>
+    <TouchableOpacity activeOpacity={0.7} onPress={onPress} style={[styles.rankItem, isRank1 && styles.rankItemFirst]}>
       {/* 아이콘 및 순위 뱃지 */}
       <View style={styles.itemIconWrap}>
         <DrinkIcon type={item.type} />
@@ -43,7 +45,7 @@ export default function RankItem({ item }: RankItemProps) {
         <Text style={[styles.countNum, isRank1 && { color: Colors.primary }]}>{item.count}</Text>
         <Text style={styles.countUnit}>잔</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

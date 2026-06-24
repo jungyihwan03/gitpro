@@ -9,7 +9,7 @@ import DateNavigator from '../components/DateNavigator';
 import DailySummaryCard from '../components/DailySummaryCard';
 
 export default function HistoryScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const route = useRoute<any>();
 
   const [loading, setLoading] = useState(true);
@@ -113,8 +113,8 @@ export default function HistoryScreen() {
                         time={new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
                         kcal={`${item.calories}kcal`} 
                         isLast={index === group.data.length - 1}
-                        // 과거 데이터는 색상을 다르게 표시 (isPast)
-                        isPast={groupIndex > 0} 
+                        isPast={groupIndex > 0}
+                        onPress={() => navigation.navigate('MenuDetail', { item, user: userData, fromTimeline: true })}
                       />
                     ))}
                   </View>

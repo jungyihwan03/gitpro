@@ -259,6 +259,13 @@ export const getMapHtml = (lat: number, lng: number) => {
             showAllMarkers();
           }
 
+          function sendCenter() {
+            if (map) {
+              var c = map.getCenter();
+              logToApp('MAP_CENTER', { lat: c.lat(), lng: c.lng() });
+            }
+          }
+
           function panToPlace(placeId) {
             for (var i = 0; i < allPlaces.length; i++) {
               if (allPlaces[i].place_id === placeId) {
@@ -279,6 +286,69 @@ export const getMapHtml = (lat: number, lng: number) => {
               if (!place) continue;
               var info = getBrandInfoJS(place.name);
               allMarkers[i].setVisible(info.isFranchise === true);
+            }
+          }
+
+          var customMarkers = [];
+
+          function addCustomMarker(name, lat, lng, id) {
+            var pos = new google.maps.LatLng(lat, lng);
+            var marker = new google.maps.Marker({
+              map: map,
+              position: pos,
+              title: name,
+              icon: {
+                url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+                  '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">' +
+                    '<circle cx="20" cy="22" r="14" fill="black" opacity="0.2"/>' +
+                    '<circle cx="20" cy="18" r="14" fill="#E67E22" stroke="white" stroke-width="2.5"/>' +
+                    '<text x="20" y="24" font-family="sans-serif" font-size="14" font-weight="bold" fill="white" text-anchor="middle">U</text>' +
+                  '</svg>'
+                ),
+                scaledSize: new google.maps.Size(40, 40),
+                anchor: new google.maps.Point(20, 22),
+              },
+            });
+            marker.customId = id;
+            customMarkers.push(marker);
+            allMarkers.push(marker);
+            marker.addListener("click", function () {
+              logToApp('CUSTOM_MARKER_CLICK', { name: name, lat: lat, lng: lng, _id: id });
+            });
+          }
+
+          function addCustomMarkers(jsonStr) {
+            try {
+              var cafes = JSON.parse(jsonStr);
+              for (var i = 0; i < cafes.length; i++) {
+                var c = cafes[i];
+                addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id);
+              }
+            } catch(e) {}
+          }
+
+          function addCustomMarkersDirect(cafes) {
+            if (!cafes || !cafes.length) return;
+            for (var i = 0; i < cafes.length; i++) {
+              var c = cafes[i];
+              addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id);
+            }
+          }
+
+          function removeCustomMarker(id) {
+            for (var i = customMarkers.length - 1; i >= 0; i--) {
+              if (customMarkers[i].customId == id) {
+                customMarkers[i].setMap(null);
+                // also remove from allMarkers
+                for (var j = allMarkers.length - 1; j >= 0; j--) {
+                  if (allMarkers[j] === customMarkers[i]) {
+                    allMarkers.splice(j, 1);
+                    break;
+                  }
+                }
+                customMarkers.splice(i, 1);
+                break;
+              }
             }
           }
 

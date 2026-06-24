@@ -1,24 +1,94 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../constants';
 
 import { ReviewWriteCard } from './CafeReviewScreen/ReviewWriteCard';
 import { ReviewItem } from './CafeReviewScreen/ReviewItem';
 
-export const ReviewTabContent = () => {
+interface ReviewTabContentProps {
+  cafe?: any;
+  user?: any;
+}
+
+export const ReviewTabContent = ({ cafe, user }: ReviewTabContentProps) => {
+  const cafePlaceId = cafe?.place_id;
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [editingReview, setEditingReview] = useState<any>(null);
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+  const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+
+  const fetchReviews = useCallback(async () => {
+    if (!cafePlaceId) { setLoading(false); return; }
+    try {
+      const res = await fetch(`${cleanUrl}/api/review/list/${cafePlaceId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setReviews(data.reviews || []);
+      setAvgRating(data.avgRating || 0);
+      setTotalCount(data.totalCount || 0);
+    } catch (e) {
+      console.error('리뷰 로딩 실패:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [cafePlaceId]);
+
+  useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+  const handleSubmit = async (rating: number, text: string, photos: string[]) => {
+    if (!user?._id || !cafePlaceId) return;
+    try {
+      if (editingReview) {
+        const res = await fetch(`${cleanUrl}/api/review/${editingReview._id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user._id, rating, text, photos }),
+        });
+        if (res.ok) {
+          setEditingReview(null);
+          fetchReviews();
+        }
+      } else {
+        const res = await fetch(`${cleanUrl}/api/review/save`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user._id,
+            userName: user.name || '익명',
+            cafePlaceId,
+            cafeName: cafe?.name || '',
+            rating, text, photos,
+            isPrivate: false,
+          }),
+        });
+        if (res.ok) fetchReviews();
+      }
+    } catch (e) {
+      console.error('리뷰 등록 실패:', e);
+    }
+  };
+
+  const initial = (name: string) => name?.charAt(0) || '?';
+  const colors = ['#FFF0F0', '#F0FDF4', '#FFF0F3', '#EFF6FF', '#F5F3FF'];
+  const textColors = ['#8B2E3A', '#16A34A', '#C62828', '#1E40AF', '#6D28D9'];
+
   return (
     <View style={styles.card}>
       <View style={styles.ratingSummary}>
         <View style={styles.ratingBigGroup}>
-          <Text style={styles.ratingBigScore}>4.8</Text>
+          <Text style={styles.ratingBigScore}>{avgRating || '-'}</Text>
           <View style={styles.ratingBigRight}>
             <View style={{ flexDirection: 'row', gap: 2 }}>
               {[1,2,3,4,5].map((_, i) => (
-                <Svg key={i} width="18" height="18" viewBox="0 0 24 24"><Path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill="#F9A825"/></Svg>
+                <Svg key={i} width="18" height="18" viewBox="0 0 24 24"><Path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" fill={i < Math.round(avgRating) ? '#F9A825' : Colors.text3}/></Svg>
               ))}
             </View>
-            <Text style={styles.ratingBigCount}>총 128개의 리뷰</Text>
+            <Text style={styles.ratingBigCount}>총 {totalCount}개의 리뷰</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.sortBtn}>
@@ -27,31 +97,43 @@ export const ReviewTabContent = () => {
         </TouchableOpacity>
       </View>
 
-      <ReviewWriteCard />
+      {editingReview && (
+        <TouchableOpacity onPress={() => setEditingReview(null)} style={{ marginBottom: 8 }}>
+          <Text style={{ fontSize: 12, color: Colors.primary }}>수정 취소</Text>
+        </TouchableOpacity>
+      )}
 
-      <View style={styles.divider} />
-
-      <ReviewItem
-        initial="김" avatarBg="#FFF0F0" avatarColor="#8B2E3A"
-        name="김커피" rating={5} date="23.10.14" helpfulCount={12}
-        body="아메리카노 산미가 적당해서 좋았어요. 매장 분위기도 조용하고 작업하기 딱 좋은 공간입니다. 직원분들도 친절하셔서 자주 올 것 같아요! 👍"
-        photos={['#f5c97a', '#f0b96a', '#f4c5a0']}
+      <ReviewWriteCard
+        key={editingReview?._id || 'new'}
+        onSubmit={handleSubmit}
+        initialRating={editingReview?.rating}
+        initialText={editingReview?.text}
+        initialPhotos={editingReview?.photos}
       />
-      <View style={styles.divider} />
 
-      <ReviewItem
-        initial="카" avatarBg="#F0FDF4" avatarColor="#16A34A"
-        name="카페러버" rating={4} date="23.10.12" helpfulCount={5}
-        body="라떼 아트가 너무 예뻐요! 사진 찍기 좋은 곳입니다. 다만 주말에는 사람이 좀 많아서 웨이팅이 있을 수 있어요."
-        photos={['#e8d5b7']}
-      />
-      <View style={styles.divider} />
-
-      <ReviewItem
-        initial="디" avatarBg="#FFF0F3" avatarColor="#C62828"
-        name="디저트킬러" rating={4} date="23.10.05" helpfulCount={3}
-        body="티라미수가 진짜 맛있어요! 커피랑 찰떡궁합입니다. 재방문 의사 100%"
-      />
+      {loading ? (
+        <ActivityIndicator color={Colors.primary} />
+      ) : reviews.length === 0 ? (
+        <Text style={{ color: Colors.text3, textAlign: 'center', paddingVertical: 20 }}>첫 리뷰를 남겨보세요!</Text>
+      ) : (
+        reviews.map((review, index) => (
+          <View key={review._id}>
+            {index > 0 && <View style={styles.divider} />}
+            <ReviewItem
+              initial={initial(review.userName)}
+              avatarBg={colors[index % colors.length]}
+              avatarColor={textColors[index % textColors.length]}
+              name={review.userName}
+              rating={review.rating}
+              date={new Date(review.createdAt).toLocaleDateString('ko-KR')}
+              helpfulCount={review.helpfulCount || 0}
+              body={review.text}
+              photos={review.photos}
+              onEdit={user?._id === review.userId ? () => setEditingReview(review) : undefined}
+            />
+          </View>
+        ))
+      )}
     </View>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Colors, Layout } from '../constants';
 
 import NavHeader from '../components/NavHeader';
@@ -39,7 +39,12 @@ export default function SearchScreen() {
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [favRefreshKey, setFavRefreshKey] = useState(0);
   
+  useFocusEffect(useCallback(() => {
+    setFavRefreshKey(k => k + 1);
+  }, []));
+
   // 🌟 핵심 해결: 빈 배열 [] 만 넣으면 never[]로 추론되므로 타입을 명시함
   const [rawListData, setRawListData] = useState<CoffeeItem[]>([]); 
   const [filteredData, setFilteredData] = useState<CoffeeItem[]>([]); 
@@ -251,6 +256,9 @@ export default function SearchScreen() {
               brand={item.brand} 
               name={item.coffeeName} 
               kcal={getMetaText(item)} 
+              itemId={item._id}
+              userId={userData?._id}
+              favRefreshKey={favRefreshKey}
               onPress={() => {
                 navigation.navigate('MenuDetail', { item, user: userData });
               }}

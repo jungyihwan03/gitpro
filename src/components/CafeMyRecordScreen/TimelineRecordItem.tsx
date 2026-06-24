@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Image } from 'react-native';
 import Svg, { Path, Defs, ClipPath, Rect } from 'react-native-svg';
 import { Colors, Layout } from '../../constants';
+import { ImageViewer } from '../ImageViewer';
 
 interface TimelineRecordItemProps {
   date: string;
@@ -10,9 +11,12 @@ interface TimelineRecordItemProps {
   photos?: string[];
   isLast?: boolean;
   onDelete?: () => void;
+  onEdit?: () => void;
 }
 
-export const TimelineRecordItem = ({ date, rating, text, photos, isLast, onDelete }: TimelineRecordItemProps) => {
+export const TimelineRecordItem = ({ date, rating, text, photos, isLast, onDelete, onEdit }: TimelineRecordItemProps) => {
+  const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
+  const isImageUri = (s: string) => s.startsWith('file://') || s.startsWith('data:') || s.startsWith('http');
 
   const handleDelete = () => {
     Alert.alert('기록 삭제', '이 기록을 삭제할까요?', [
@@ -69,7 +73,7 @@ export const TimelineRecordItem = ({ date, rating, text, photos, isLast, onDelet
         <View style={styles.metaRow}>
           <Text style={styles.recordDate}>{date}</Text>
           <View style={styles.actions}>
-            <TouchableOpacity activeOpacity={0.7} style={styles.actionBtn}>
+            <TouchableOpacity activeOpacity={0.7} style={styles.actionBtn} onPress={onEdit}>
               <Text style={styles.actionText}>수정</Text>
             </TouchableOpacity>
             <View style={styles.actionSep} />
@@ -86,10 +90,19 @@ export const TimelineRecordItem = ({ date, rating, text, photos, isLast, onDelet
           
           {photos && photos.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
-              {photos.map((color, idx) => (
-                <View key={idx} style={[styles.recordPhoto, { backgroundColor: color }]} />
+              {photos.map((photo, idx) => (
+                isImageUri(photo) ? (
+                  <TouchableOpacity key={idx} onPress={() => setFullscreenImg(photo)}>
+                    <Image source={{ uri: photo }} style={styles.recordPhoto} />
+                  </TouchableOpacity>
+                ) : (
+                  <View key={idx} style={[styles.recordPhoto, { backgroundColor: photo }]} />
+                )
               ))}
             </ScrollView>
+          )}
+          {fullscreenImg && (
+            <ImageViewer visible uri={fullscreenImg} onClose={() => setFullscreenImg(null)} />
           )}
         </View>
       </View>

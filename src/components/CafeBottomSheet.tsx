@@ -19,11 +19,15 @@ interface CafeInfo {
   } | null;
   photo_url?: string | null;
   phone?: string | null;
+  isCustom?: boolean;
 }
 
 interface CafeBottomSheetProps {
   cafe?: CafeInfo | null;
   distance?: string;
+  selectionMode?: boolean;
+  onSelectCafe?: (cafe: CafeInfo) => void;
+  onDeleteCafe?: (cafe: CafeInfo) => void;
 }
 
 function getHoursInfo(cafe: CafeInfo | null | undefined): { text: string; isOpen: boolean | null } | null {
@@ -44,7 +48,7 @@ function getHoursInfo(cafe: CafeInfo | null | undefined): { text: string; isOpen
   return null;
 }
 
-export default function CafeBottomSheet({ cafe, distance }: CafeBottomSheetProps) {
+export default function CafeBottomSheet({ cafe, distance, selectionMode, onSelectCafe, onDeleteCafe }: CafeBottomSheetProps) {
   const [memo, setMemo] = useState('');
   const navigation = useNavigation<any>();
 
@@ -67,6 +71,10 @@ export default function CafeBottomSheet({ cafe, distance }: CafeBottomSheetProps
         bounciness: 8,
       }).start();
       currentOffset.current = 0;
+    } else {
+      translateY.setValue(SCREEN_HEIGHT);
+      setInteractive(false);
+      interactiveRef.current = false;
     }
   }, [cafe]);
 
@@ -84,7 +92,11 @@ export default function CafeBottomSheet({ cafe, distance }: CafeBottomSheetProps
         const finalOffset = Math.max(-200, Math.min(PEAK_OFFSET, currentOffset.current + gestureState.dy));
 
         if (finalOffset < -100 || gestureState.vy < -0.5) {
-          navigation.push('CafeDetail', { cafe: cafeRef.current ?? null, distance: distanceRef.current });
+          if (selectionMode && cafeRef.current && onSelectCafe) {
+            onSelectCafe(cafeRef.current);
+          } else {
+            navigation.push('CafeDetail', { cafe: cafeRef.current ?? null, distance: distanceRef.current });
+          }
           Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
@@ -129,7 +141,13 @@ export default function CafeBottomSheet({ cafe, distance }: CafeBottomSheetProps
         <TouchableOpacity
           style={styles.cafeRow}
           activeOpacity={0.8}
-          onPress={() => { navigation.navigate('CafeDetail', { cafe: cafeRef.current ?? null, distance: distanceRef.current }); }}
+          onPress={() => {
+            if (selectionMode && cafeRef.current && onSelectCafe) {
+              onSelectCafe(cafeRef.current);
+            } else {
+              navigation.navigate('CafeDetail', { cafe: cafeRef.current ?? null, distance: distanceRef.current });
+            }
+          }}
         >
           <View style={styles.cafeThumb}>
             {photoUrl ? (
@@ -211,6 +229,27 @@ export default function CafeBottomSheet({ cafe, distance }: CafeBottomSheetProps
             <Text style={styles.actionLabel}>공유</Text>
           </TouchableOpacity>
         </View>
+
+        {selectionMode && (
+          <TouchableOpacity
+            style={styles.selectBtn}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (cafe && onSelectCafe) onSelectCafe(cafe);
+            }}
+          >
+            <Text style={styles.selectBtnText}>이 카페 선택</Text>
+          </TouchableOpacity>
+        )}
+        {cafe?.isCustom && onDeleteCafe && (
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            activeOpacity={0.8}
+            onPress={() => onDeleteCafe(cafe)}
+          >
+            <Text style={styles.deleteBtnText}>삭제</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -265,4 +304,16 @@ const styles = StyleSheet.create({
   iconFilled: { backgroundColor: Colors.primary, ...Layout.shadow1 },
   iconTonal: { backgroundColor: Colors.bg },
   actionLabel: { fontSize: 12, fontWeight: '500', color: Colors.text2 },
+  selectBtn: {
+    marginTop: 16, height: 48, borderRadius: Layout.radiusLg,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.primary,
+  },
+  selectBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  deleteBtn: {
+    marginTop: 10, height: 44, borderRadius: Layout.radiusLg,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FECACA',
+  },
+  deleteBtnText: { fontSize: 15, fontWeight: '600', color: '#DC2626' },
 });

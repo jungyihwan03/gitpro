@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, StatusBar, Alert, ActivityIndicator, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, getBrandInfo } from '../constants';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useUserStore } from '../store/useUserStore';
 import { fetchPlaceDetails, fetchCoffeeApi } from '../api';
 
 import NavHeader from '../components/NavHeader';
@@ -14,7 +15,6 @@ import CafeMenuList from '../components/CafeMenuList';
 import type { MenuItem } from '../components/CafeMenuList';
 import CafePhotoGallery from '../components/CafePhotoGallery';
 import CafeDetailInfo from '../components/CafeDetailInfo';
-import CafeExternalInfo from '../components/CafeExternalInfo';
 import { ReviewTabContent } from '../components/ReviewTabContent';
 import { MyRecordTabContent } from '../components/MyRecordTabContent';
 
@@ -23,17 +23,70 @@ export default function CafeDetailScreen() {
   const route = useRoute<any>();
   const cafe = route.params?.cafe ?? null;
   const distance = route.params?.distance ?? '';
+  const userData = useUserStore((s) => s.user);
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState('홈');
+
+  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+  const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+
+  const checkCafeFav = useCallback(() => {
+    if (!userData?._id || !cafe?.place_id) return;
+    fetch(`${cleanUrl}/api/favorite/check/${userData._id}/cafe/${cafe.place_id}`)
+      .then(r => r.json())
+      .then(data => setIsFavorite(data.favorited))
+      .catch(e => console.warn('checkCafeFav fail', e));
+  }, [userData?._id, cafe?.place_id, cleanUrl]);
+
+  useFocusEffect(checkCafeFav);
+
+  const toggleFavorite = () => {
+    if (!userData?._id || !cafe?.place_id) return;
+    fetch(`${cleanUrl}/api/favorite/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: userData._id,
+        targetType: 'cafe',
+        targetId: cafe.place_id,
+        name: cafe.name || '',
+        vicinity: cafe.vicinity || '',
+      }),
+    }).then(r => r.json()).then(data => setIsFavorite(data.favorited)).catch(e => console.warn('toggleCafeFav fail', e));
+  };
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const brandInfo = getBrandInfo(cafe?.name || '');
   const isFranchise = brandInfo.isFranchise;
 
+  const [rawCoffeeData, setRawCoffeeData] = useState<any[]>([]);
   const [menuData, setMenuData] = useState<{ category: string; items: MenuItem[] }[] | null>(null);
   const [placeDetails, setPlaceDetails] = useState<any>(null);
   const [loadingData, setLoadingData] = useState(false);
+
+  const [searchText, setSearchText] = useState('');
+  useEffect(() => { setSelectedId(null); }, [searchText]);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [isAiSearching, setIsAiSearching] = useState(false);
+
+  const cafeLocation = useMemo(() => ({
+    lat: placeDetails?.geometry?.location?.lat || cafe?.geometry?.location?.lat,
+    lng: placeDetails?.geometry?.location?.lng || cafe?.geometry?.location?.lng,
+  }), [placeDetails, cafe]);
+
+  const filteredMenuData = useMemo(() => {
+    if (!menuData || !searchText) return menuData;
+    return menuData
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item =>
+          item.name.toLowerCase().includes(searchText.toLowerCase())
+        ),
+      }))
+      .filter(section => section.items.length > 0);
+  }, [menuData, searchText]);
 
   useEffect(() => {
     if (!cafe?.name) return;
@@ -48,6 +101,7 @@ export default function CafeDetailScreen() {
       const brandName = brandInfo.name;
       fetchCoffeeApi()
         .then((data: any[]) => {
+          setRawCoffeeData(data);
           const filtered = data.filter((item: any) => {
             const itemBrand = (item.brand || '').toLowerCase();
             return brandName.toLowerCase().includes(itemBrand) || itemBrand.includes(brandName.toLowerCase());
@@ -85,8 +139,65 @@ export default function CafeDetailScreen() {
     }
   }, [cafe?.place_id]);
 
+  const handleSelect = (id: string) => {
+    setSelectedId(id === selectedId ? null : id);
+  };
+
+  const handleRecord = () => {
+    if (!selectedId) {
+      Alert.alert('알림', '기록할 메뉴를 먼저 선택해 주세요.');
+      return;
+    }
+    const fullItem = rawCoffeeData.find((c: any) => c._id === selectedId);
+    if (!fullItem) {
+      Alert.alert('오류', '메뉴 정보를 찾을 수 없습니다.');
+      return;
+    }
+    if (!userData?._id) {
+      Alert.alert('알림', '로그인 정보가 유효하지 않습니다. 다시 로그인해주세요.');
+      return;
+    }
+    navigation.navigate('MenuDetail', {
+      item: { ...fullItem, brand: cafe?.name || fullItem.brand },
+      user: userData,
+      cafe: { name: cafe?.name, ...cafeLocation },
+    });
+  };
+
+  const handleAiSearch = async () => {
+    if (!customName.trim()) return;
+    if (!userData?._id) {
+      Alert.alert('알림', '로그인 정보가 유효하지 않습니다.');
+      return;
+    }
+    setIsAiSearching(true);
+    try {
+      const res = await fetch(`${cleanUrl}/api/analyze-by-name`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coffeeName: customName.trim(), brand: cafe?.name || '' }),
+      });
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg);
+      }
+      const aiData = await res.json();
+      setShowNameInput(false);
+      setCustomName('');
+      navigation.navigate('MenuDetail', {
+        item: { ...aiData, brand: cafe?.name || aiData.brand || '' },
+        user: userData,
+        cafe: { name: cafe?.name, ...cafeLocation },
+      });
+    } catch (e: any) {
+      Alert.alert('오류', 'AI 분석에 실패했습니다.\n다시 시도해주세요.');
+    } finally {
+      setIsAiSearching(false);
+    }
+  };
+
   const HeartButton = (
-    <TouchableOpacity onPress={() => setIsFavorite(!isFavorite)}>
+    <TouchableOpacity onPress={toggleFavorite}>
       <Ionicons 
         name={isFavorite ? "heart" : "heart-outline"} 
         size={24} 
@@ -94,14 +205,6 @@ export default function CafeDetailScreen() {
       />
     </TouchableOpacity>
   );
-
-  const handleRecord = () => {
-    if (!selectedId) {
-      Alert.alert('알림', '기록할 메뉴를 먼저 선택해 주세요.');
-      return;
-    }
-    navigation.navigate('MenuDetail', { menuId: selectedId });
-  };
 
   return (
     <View style={styles.container}>
@@ -137,26 +240,88 @@ export default function CafeDetailScreen() {
         )}
 
         {activeTab === '메뉴' && (
-          loadingData ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
-          ) : isFranchise ? (
-            <CafeMenuList 
-              selectedId={selectedId} 
-              onSelect={(id) => setSelectedId(id)} 
-              menuData={menuData ?? undefined}
-            />
-          ) : (
-            <CafeExternalInfo details={placeDetails} />
-          )
+          <>
+            <View style={styles.searchWrap}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={18} color={Colors.text3} style={{ marginRight: 6 }} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="메뉴 검색"
+                  placeholderTextColor={Colors.text3}
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+                {searchText ? (
+                  <TouchableOpacity onPress={() => setSearchText('')}>
+                    <Ionicons name="close-circle" size={18} color={Colors.text3} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+
+            {loadingData ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+            ) : isFranchise && filteredMenuData && filteredMenuData.length > 0 ? (
+              <CafeMenuList 
+                selectedId={selectedId} 
+                onSelect={handleSelect}
+                menuData={filteredMenuData}
+              />
+            ) : isFranchise && menuData !== null && filteredMenuData?.length === 0 ? (
+              <View style={styles.noResultWrap}>
+                <Text style={styles.noResultText}>검색 결과가 없습니다</Text>
+              </View>
+            ) : isFranchise ? (
+              <CafeMenuList 
+                selectedId={selectedId} 
+                onSelect={handleSelect}
+                menuData={undefined}
+              />
+            ) : null}
+
+            {showNameInput ? (
+              <View style={styles.nameInputWrap}>
+                <TextInput
+                  style={styles.nameInput}
+                  placeholder="커피 이름 입력"
+                  placeholderTextColor={Colors.text3}
+                  value={customName}
+                  onChangeText={setCustomName}
+                  autoFocus
+                />
+                <View style={styles.nameInputRow}>
+                  <TouchableOpacity style={styles.nameCancelBtn} onPress={() => { setShowNameInput(false); setCustomName(''); }}>
+                    <Text style={styles.nameCancelBtnText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.nameSearchBtn, !customName.trim() && { opacity: 0.5 }]}
+                    onPress={handleAiSearch}
+                    disabled={!customName.trim() || isAiSearching}
+                  >
+                    {isAiSearching ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <Text style={styles.nameSearchBtnText}>AI 검색</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.noMenuBtn} onPress={() => setShowNameInput(true)}>
+                <Ionicons name="search" size={18} color={Colors.primary} style={{ marginRight: 6 }} />
+                <Text style={styles.noMenuBtnText}>찾으시는 메뉴가 없나요?</Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
-        {activeTab === '리뷰' && <ReviewTabContent />}
+        {activeTab === '리뷰' && <ReviewTabContent cafe={cafe} user={userData} />}
 
-        {activeTab === '나의 기록' && <MyRecordTabContent />}
+        {activeTab === '나의 기록' && <MyRecordTabContent cafe={cafe} user={userData} />}
         
       </ScrollView>
 
-      {activeTab === '메뉴' && isFranchise && (
+      {activeTab === '메뉴' && isFranchise && menuData && selectedId && (
         <BottomCtaBar 
           title="선택한 메뉴 기록하기" 
           onPress={handleRecord}
@@ -175,5 +340,90 @@ const styles = StyleSheet.create({
     padding: 24,
     gap: 24,
     paddingBottom: 180,
+  },
+  searchWrap: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 48,
+    justifyContent: 'center',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: Colors.text1,
+    paddingVertical: 0,
+  },
+  noResultWrap: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noResultText: {
+    fontSize: 14,
+    color: Colors.text3,
+  },
+  nameInputWrap: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 16,
+    gap: 12,
+  },
+  nameInput: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: Colors.text1,
+  },
+  nameInputRow: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'flex-end',
+  },
+  nameCancelBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.border,
+  },
+  nameCancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text2,
+  },
+  nameSearchBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  nameSearchBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  noMenuBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  },
+  noMenuBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

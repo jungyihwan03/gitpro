@@ -30,6 +30,10 @@ import { StatisticsScreen } from './src/screens/StatisticsScreen';
 import { CompareScreen } from './src/screens/CompareScreen';
 import DrinkRankingScreen from './src/screens/DrinkRankingScreen';
 import RecordCompleteScreen from './src/screens/RecordCompleteScreen';
+import FavoriteListScreen from './src/screens/FavoriteListScreen';
+import CafeSelectScreen from './src/screens/CafeSelectScreen';
+import SimpleCafeDetailScreen from './src/screens/SimpleCafeDetailScreen';
+import MyCustomCafesScreen from './src/screens/MyCustomCafesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { ProfileDetailScreen } from './src/screens/ProfileDetailScreen';
 
@@ -66,6 +70,10 @@ function MainAppStack({ route }: any) {
         <MainStack.Screen name="Compare" component={CompareScreen} />
         <MainStack.Screen name="DrinkRanking" component={DrinkRankingScreen} />
         <MainStack.Screen name="RecordComplete" component={RecordCompleteScreen} />
+        <MainStack.Screen name="FavoriteList" component={FavoriteListScreen} />
+        <MainStack.Screen name="CafeSelect" component={CafeSelectScreen} />
+        <MainStack.Screen name="SimpleCafeDetail" component={SimpleCafeDetailScreen} />
+        <MainStack.Screen name="MyCustomCafes" component={MyCustomCafesScreen} />
       </MainStack.Navigator>
     </SafeAreaView>
   );

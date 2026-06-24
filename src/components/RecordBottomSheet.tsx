@@ -44,6 +44,14 @@ export default function RecordBottomSheet() {
     }, 100);
   };
 
+  // ✏️ [직접 입력하기] 버튼 클릭 시 동작
+  const handleDirectInput = () => {
+    closeRecordSheet();
+    setTimeout(() => {
+      navigation.navigate('Map', { selectionMode: true, user: userData });
+    }, 100);
+  };
+
   return (
     <Modal
       visible={isRecordSheetVisible}
@@ -95,6 +103,26 @@ export default function RecordBottomSheet() {
               <View style={styles.optTextWrap}>
                 <Text style={styles.optTitle}>직접 검색하기</Text>
                 <Text style={styles.optDesc}>메뉴 이름으로 직접 찾아요</Text>
+              </View>
+              <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <Path d="M9 18l6-6-6-6" stroke="#CCCCCC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+            </TouchableOpacity>
+
+            {/* 3. 직접 입력하기 (지도에서 카페 선택) */}
+            <TouchableOpacity 
+              style={styles.sheetOption} 
+              activeOpacity={0.7}
+              onPress={handleDirectInput}
+            >
+              <View style={[styles.optIconWrap, styles.optIconSearch]}>
+                <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <Path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z" stroke={Colors.text2} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </Svg>
+              </View>
+              <View style={styles.optTextWrap}>
+                <Text style={styles.optTitle}>직접 입력하기</Text>
+                <Text style={styles.optDesc}>지도에서 카페를 선택해 입력해요</Text>
               </View>
               <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <Path d="M9 18l6-6-6-6" stroke="#CCCCCC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

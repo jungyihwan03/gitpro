@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
   },
   rightActionWrap: {
-    width: 48,
+    minWidth: 48,
     height: 48,
     alignItems: 'center',
     justifyContent: 'center',

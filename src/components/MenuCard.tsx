@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../constants';
@@ -8,19 +8,43 @@ interface MenuCardProps {
   brand: string;
   name: string;
   kcal: string;
-  initialFav?: boolean;
-  onPress?: () => void; // 🌟 onPress 프롭 추가
+  itemId?: string;
+  userId?: string;
+  favRefreshKey?: number;
+  onPress?: () => void;
 }
+
+const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
+const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
 
 export default function MenuCard({ 
   imgEmoji, 
   brand, 
   name, 
   kcal, 
-  initialFav = false,
-  onPress // 🌟 추가
+  itemId,
+  userId,
+  favRefreshKey = 0,
+  onPress
 }: MenuCardProps) {
-  const [isFav, setIsFav] = useState(initialFav);
+  const [isFav, setIsFav] = useState(false);
+
+  useEffect(() => {
+    if (!userId || !itemId) return;
+    fetch(`${cleanUrl}/api/favorite/check/${userId}/menu/${itemId}`)
+      .then(r => r.json())
+      .then(data => setIsFav(data.favorited))
+      .catch(e => console.warn('favCheck fail', e));
+  }, [userId, itemId, favRefreshKey]);
+
+  const toggleFav = () => {
+    if (!userId || !itemId) return;
+    fetch(`${cleanUrl}/api/favorite/toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, targetType: 'menu', targetId: itemId, name, brand, emoji: imgEmoji, calories: parseInt(kcal) || 0 }),
+    }).then(r => r.json()).then(data => setIsFav(data.favorited)).catch(e => console.warn('toggleFav fail', e));
+  };
 
   return (
     <TouchableOpacity 
@@ -48,8 +72,8 @@ export default function MenuCard({
           activeOpacity={0.6} 
           style={styles.favBtn} 
           onPress={(e) => {
-            e.stopPropagation(); // 🌟 하트 클릭 시 상세페이지로 넘어가지 않게 방지
-            setIsFav(!isFav);
+            e.stopPropagation();
+            toggleFav();
           }}
         >
           <Svg width="22" height="22" viewBox="0 -2 22 22" fill="none">

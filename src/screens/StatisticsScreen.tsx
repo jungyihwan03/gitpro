@@ -83,43 +83,85 @@ export const StatisticsScreen = () => {
   const rankings = Object.entries(menuCountMap)
     .map(([name, data]) => ({ name, ...data }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .slice(0, 3);
 
-  const BASE_SLOTS = [8, 10, 12, 14, 16, 18];
-  const hours = filtered.map((i: any) => new Date(i.date).getHours());
-  const minHour = hours.length > 0 ? Math.min(...hours) : 12;
-  const maxHour = hours.length > 0 ? Math.max(...hours) : 12;
-  let slotOffset = 0;
-  if (minHour < 7) slotOffset = -2;
-  else if (maxHour >= 19) slotOffset = 2;
-  const slots = BASE_SLOTS.map(s => s + slotOffset);
   const nutrientField = NUTRIENT_KEY[activeChip] || 'calories';
-  const slotMap: Record<string, { val: number }> = {};
-  slots.forEach(s => { slotMap[String(s).padStart(2, '0')] = { val: 0 }; });
-  filtered.forEach((i: any) => {
-    const h = new Date(i.date).getHours();
-    let slot = slots[0];
-    for (const s of slots) {
-      if (h >= s - 1 && h < s + 1) { slot = s; break; }
-      if (h < s) { slot = s; break; }
-      slot = s;
-    }
-    const key = String(slot).padStart(2, '0');
-    slotMap[key].val += Number(i[nutrientField]) || 0;
-  });
-  const maxSlotVal = Math.max(...Object.values(slotMap).map(v => v.val), 1);
-  const hourlyData = slots
-    .map(s => {
-      const key = String(s).padStart(2, '0');
-      return {
-        time: key,
-        val: slotMap[key].val,
-        height: slotMap[key].val > 0 ? Math.max(8, (slotMap[key].val / maxSlotVal) * 200) : 4,
-        active: slotMap[key].val > 0 && slotMap[key].val === Math.max(...Object.values(slotMap).map(v => v.val)),
-      };
-    });
 
-  const peakSlot = hourlyData.length > 0 ? [...hourlyData].sort((a, b) => b.val - a.val)[0] : null;
+  const getChartData = () => {
+    if (activeSegment === 0) {
+      const BASE_SLOTS = [8, 10, 12, 14, 16, 18];
+      const hours = filtered.map((i: any) => new Date(i.date).getHours());
+      const minHour = hours.length > 0 ? Math.min(...hours) : 12;
+      const maxHour = hours.length > 0 ? Math.max(...hours) : 12;
+      let slotOffset = 0;
+      if (minHour < 7) slotOffset = -2;
+      else if (maxHour >= 19) slotOffset = 2;
+      const slots = BASE_SLOTS.map(s => s + slotOffset);
+      const slotMap: Record<string, { val: number }> = {};
+      slots.forEach(s => { slotMap[String(s).padStart(2, '0')] = { val: 0 }; });
+      filtered.forEach((i: any) => {
+        const h = new Date(i.date).getHours();
+        let slot = slots[0];
+        for (const s of slots) {
+          if (h >= s - 1 && h < s + 1) { slot = s; break; }
+          if (h < s) { slot = s; break; }
+          slot = s;
+        }
+        const key = String(slot).padStart(2, '0');
+        slotMap[key].val += Number(i[nutrientField]) || 0;
+      });
+      const maxVal = Math.max(...Object.values(slotMap).map(v => v.val), 1);
+      return slots.map(s => {
+        const key = String(s).padStart(2, '0');
+        return { time: key, val: slotMap[key].val, height: slotMap[key].val > 0 ? Math.max(8, (slotMap[key].val / maxVal) * 200) : 4, active: slotMap[key].val > 0 && slotMap[key].val === Math.max(...Object.values(slotMap).map(v => v.val)) };
+      });
+    } else if (activeSegment === 1) {
+      const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+      const weekEnd = new Date(selectedDate);
+      const weekStart = new Date(weekEnd);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const dayTotals: { label: string; val: number }[] = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(d.getDate() + i);
+        const dateStr = d.toDateString();
+        const total = filtered
+          .filter((item: any) => new Date(item.date).toDateString() === dateStr)
+          .reduce((sum: number, item: any) => sum + (Number(item[nutrientField]) || 0), 0);
+        dayTotals.push({ label: dayNames[d.getDay()], val: total });
+      }
+      const maxVal = Math.max(...dayTotals.map(d => d.val), 1);
+      return dayTotals.map(d => ({ time: d.label, val: d.val, height: d.val > 0 ? Math.max(8, (d.val / maxVal) * 200) : 4, active: d.val > 0 && d.val === maxVal }));
+    } else {
+      const d = selectedDate;
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0);
+      const weekLabels: { label: string; val: number }[] = [];
+      const wkStart = new Date(startOfMonth);
+      let weekNum = 1;
+      while (wkStart <= endOfMonth) {
+        const wkEnd = new Date(wkStart);
+        wkEnd.setDate(wkEnd.getDate() + 6);
+        const total = filtered
+          .filter((item: any) => {
+            const id = new Date(item.date);
+            return id >= wkStart && id <= wkEnd;
+          })
+          .reduce((sum: number, item: any) => sum + (Number(item[nutrientField]) || 0), 0);
+        weekLabels.push({ label: `${weekNum}주`, val: total });
+        wkStart.setDate(wkStart.getDate() + 7);
+        weekNum++;
+        if (weekNum > 5) break;
+      }
+      const maxVal = Math.max(...weekLabels.map(w => w.val), 1);
+      return weekLabels.map(w => ({ time: w.label, val: w.val, height: w.val > 0 ? Math.max(8, (w.val / maxVal) * 200) : 4, active: w.val > 0 && w.val === maxVal }));
+    }
+  };
+
+  const chartData = getChartData();
+  const peakSlot = chartData.length > 0 ? [...chartData].sort((a, b) => b.val - a.val)[0] : null;
 
   const changeDate = (direction: -1 | 1) => {
     const newDate = new Date(selectedDate);
@@ -186,7 +228,7 @@ export const StatisticsScreen = () => {
           <SummaryCard icon="⏰" label="마지막 섭취" value={lastIntakeTime} flexWeight={1} />
         </View>
 
-        {hourlyData.length > 0 && <ChartCard data={hourlyData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} onComparePress={() => navigation.navigate('Compare', { user: userData })} />}
+        {chartData.length > 0 && <ChartCard data={chartData} chips={CHIPS} activeChip={activeChip} onChipChange={setActiveChip} onComparePress={() => navigation.navigate('Compare', { user: userData })} />}
 
         {rankings.length > 0 && (
           <View style={styles.rankingSection}>
@@ -223,8 +265,8 @@ export const StatisticsScreen = () => {
               <Text style={styles.patternTitle}>섭취 패턴 분석</Text>
             </View>
             <Text style={styles.patternBody}>
-              {activeSegment === 0 ? '오늘' : '이 기간'} 중 <Text style={styles.patternHighlight}>{peakSlot.time}:00</Text>에 섭취량이 가장 많았습니다.
-              총 {peakSlot.val.toLocaleString()}kcal를 섭취했으며, {rankings[0]?.name || '커피'}가 가장 많이 기록되었습니다.
+              {activeSegment === 0 ? `오늘 중 ${peakSlot.time}:00` : activeSegment === 1 ? `이번 주 ${peakSlot.time}요일` : `이번 달 ${peakSlot.time}`}에 {activeChip} 섭취가 가장 많았습니다.
+              총 {peakSlot.val.toLocaleString()}{activeChip === '칼로리' ? 'kcal' : activeChip === '당' ? 'g' : activeChip === '단백질' ? 'g' : 'mg'}를 섭취했으며, {rankings[0]?.name || '커피'}가 가장 많이 기록되었습니다.
             </Text>
           </View>
         )}

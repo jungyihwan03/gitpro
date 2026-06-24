@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../../constants';
+import { ImageViewer } from '../ImageViewer';
 
 interface ReviewItemProps {
   initial: string;
@@ -11,12 +12,15 @@ interface ReviewItemProps {
   rating: number;
   date: string;
   body: string;
-  photos?: string[]; 
+  photos?: string[];
   helpfulCount: number;
+  onEdit?: () => void;
 }
 
-export const ReviewItem = ({ initial, avatarBg, avatarColor, name, rating, date, body, photos, helpfulCount }: ReviewItemProps) => {
+export const ReviewItem = ({ initial, avatarBg, avatarColor, name, rating, date, body, photos, helpfulCount, onEdit }: ReviewItemProps) => {
   const [isHelpful, setIsHelpful] = useState(false);
+  const [fullscreenImg, setFullscreenImg] = useState<string | null>(null);
+  const isImageUri = (s: string) => s.startsWith('file://') || s.startsWith('data:') || s.startsWith('http');
 
   return (
     <View style={styles.reviewItem}>
@@ -35,6 +39,11 @@ export const ReviewItem = ({ initial, avatarBg, avatarColor, name, rating, date,
               ))}
             </View>
             <Text style={styles.reviewDate}>{date}</Text>
+            {onEdit && (
+              <TouchableOpacity onPress={onEdit} style={{ marginLeft: 8 }}>
+                <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '500' }}>수정</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -43,10 +52,20 @@ export const ReviewItem = ({ initial, avatarBg, avatarColor, name, rating, date,
 
       {photos && photos.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosScroll}>
-          {photos.map((color, idx) => (
-            <View key={idx} style={[styles.reviewPhoto, { backgroundColor: color }]} />
+          {photos.map((photo, idx) => (
+            isImageUri(photo) ? (
+              <TouchableOpacity key={idx} onPress={() => setFullscreenImg(photo)}>
+                <Image source={{ uri: photo }} style={styles.reviewPhoto} />
+              </TouchableOpacity>
+            ) : (
+              <View key={idx} style={[styles.reviewPhoto, { backgroundColor: photo }]} />
+            )
           ))}
         </ScrollView>
+      )}
+
+      {fullscreenImg && (
+        <ImageViewer visible uri={fullscreenImg} onClose={() => setFullscreenImg(null)} />
       )}
 
       <TouchableOpacity activeOpacity={0.7} style={[styles.helpfulBtn, isHelpful && styles.helpfulBtnActive]} onPress={() => setIsHelpful(!isHelpful)}>

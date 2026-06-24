@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Colors, Layout } from '../constants';
 
 export interface NutritionItem {
@@ -10,9 +10,11 @@ export interface NutritionItem {
 
 interface NutritionListCardProps {
   data: NutritionItem[];
+  editable?: boolean;
+  onValueChange?: (index: number, value: string) => void;
 }
 
-export default function NutritionListCard({ data }: NutritionListCardProps) {
+export default function NutritionListCard({ data, editable, onValueChange }: NutritionListCardProps) {
   return (
     <View style={styles.nutritionCard}>
       <View style={styles.nutritionHeader}>
@@ -23,9 +25,20 @@ export default function NutritionListCard({ data }: NutritionListCardProps) {
         {data.map((item, index) => (
           <View key={index} style={styles.nutritionRow}>
             <Text style={styles.nutritionName}>{item.label}</Text>
-            <Text style={[styles.nutritionVal, item.isHighlight && styles.nutritionValHighlight]}>
-              {item.value}
-            </Text>
+            {editable ? (
+              <TextInput
+                style={[styles.nutritionInput, item.isHighlight && styles.nutritionInputHighlight]}
+                value={String(item.value)}
+                onChangeText={(v) => onValueChange?.(index, v)}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={Colors.text3}
+              />
+            ) : (
+              <Text style={[styles.nutritionVal, item.isHighlight && styles.nutritionValHighlight]}>
+                {item.value}
+              </Text>
+            )}
           </View>
         ))}
       </View>
@@ -57,6 +70,13 @@ const styles = StyleSheet.create({
   nutritionName: { fontSize: 14, fontWeight: '400', color: Colors.text1, flex: 1 },
   nutritionVal: { fontSize: 14, fontWeight: '700', color: Colors.text1, marginLeft: 16 },
   nutritionValHighlight: { color: Colors.primary, fontSize: 16 },
+  nutritionInput: {
+    fontSize: 14, fontWeight: '700', color: Colors.text1, marginLeft: 16,
+    textAlign: 'right', minWidth: 60,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    paddingVertical: 2, paddingHorizontal: 4,
+  },
+  nutritionInputHighlight: { color: Colors.primary, fontSize: 16 },
   nutritionNote: {
     paddingTop: 16, paddingHorizontal: 24, paddingBottom: 24,
     borderTopWidth: 1, borderTopColor: Colors.divider, alignItems: 'center',

@@ -47,24 +47,25 @@ export default function DrinkRankingScreen() {
         const data = await res.json();
         const timeline: any[] = data.timeline || [];
 
-        const countMap: Record<string, { count: number; totalCaffeine: number }> = {};
+        const countMap: Record<string, { count: number; totalCaffeine: number; firstItem: any }> = {};
         timeline.forEach((item: any) => {
           const key = item.coffeeName || '기타';
-          if (!countMap[key]) countMap[key] = { count: 0, totalCaffeine: 0 };
+          if (!countMap[key]) countMap[key] = { count: 0, totalCaffeine: 0, firstItem: item };
           countMap[key].count++;
           countMap[key].totalCaffeine += Number(item.caffeine) || 0;
         });
 
         const sorted = Object.entries(countMap)
-          .map(([name, info]) => ({ name, count: info.count, totalCaffeine: info.totalCaffeine }))
+          .map(([name, info]) => ({ name, count: info.count, totalCaffeine: info.totalCaffeine, firstItem: info.firstItem }))
           .sort((a, b) => b.count - a.count);
 
-        setRankingData(sorted.map((item, i) => ({
+        setRankingData(sorted.slice(0, 10).map((item, i) => ({
           id: i + 1,
           name: item.name,
           totalMg: item.totalCaffeine.toLocaleString(),
           count: item.count,
           type: guessDrinkType(item.name),
+          sourceItem: item.firstItem,
         })));
       } catch (e) {
         console.error('랭킹 로딩 실패:', e);
@@ -85,7 +86,14 @@ export default function DrinkRankingScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
           rankingData.map((data) => (
-            <RankItem key={data.id} item={data} />
+            <RankItem
+              key={data.id}
+              item={data}
+              onPress={() => {
+                const menuItem = data.sourceItem || { coffeeName: data.name };
+                navigation.navigate('MenuDetail', { item: menuItem, user: userData });
+              }}
+            />
           ))
         )}
       </ScrollView>
