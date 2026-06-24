@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 90,
     ...Layout.shadow4, 
   },
   handleWrap: { alignItems: 'center', paddingTop: 14, paddingBottom: 24 },
