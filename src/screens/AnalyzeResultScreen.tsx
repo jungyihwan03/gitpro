@@ -57,18 +57,11 @@ export default function AnalyzeResultScreen() {
       });
 
       if (response.ok) {
-        Alert.alert("기록 완료", `${item.coffeeName}이(가) 타임라인에 저장되었습니다!`, [
-          {
-            text: "확인",
-            onPress: () => {
-              // 🏠 홈 화면으로 이동 시 유저 정보를 유지하여 무한 로딩 방지
-              navigation.navigate('MainTabs', { 
-                screen: 'Home', 
-                params: { user: userData } 
-              });
-            }
-          }
-        ]);
+        navigation.navigate('RecordComplete', {
+          coffeeName: item.coffeeName,
+          calories: Number(item.calories) || 0,
+          user: userData,
+        });
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || '서버 저장 실패');
