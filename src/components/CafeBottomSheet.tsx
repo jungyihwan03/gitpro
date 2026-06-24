@@ -20,6 +20,7 @@ interface CafeInfo {
   photo_url?: string | null;
   phone?: string | null;
   isCustom?: boolean;
+  registeredBy?: string;
 }
 
 interface CafeBottomSheetProps {
@@ -181,6 +182,9 @@ export default function CafeBottomSheet({ cafe, distance, selectionMode, onSelec
                 <Text style={[styles.closingText, { color: hoursInfo.isOpen ? Colors.success : Colors.error }]}>{hoursInfo.text}</Text>
               </View>
             )}
+            {cafe?.isCustom && cafe?.registeredBy ? (
+              <Text style={styles.registeredBy}>등록자: {cafe.registeredBy}</Text>
+            ) : null}
           </View>
         </TouchableOpacity>
 
@@ -296,4 +300,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEE2E2', borderWidth: 1, borderColor: '#FECACA',
   },
   deleteBtnText: { fontSize: 15, fontWeight: '600', color: '#DC2626' },
+  registeredBy: { fontSize: 12, color: Colors.text3, marginTop: 4 },
 });

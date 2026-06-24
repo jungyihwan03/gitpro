@@ -172,6 +172,7 @@ export default function MenuDetailScreen() {
               protein: Number(editNuts[2]) || 0,
               sugar: Number(editNuts[1]) || 0,
               emoji: editEmoji || '☕',
+              aiGenerated: item?.aiGenerated || false,
               location: cafe?.lat || cafe?.lng ? { lat: cafe.lat, lng: cafe.lng } : undefined,
             }),
           });
@@ -223,6 +224,7 @@ export default function MenuDetailScreen() {
               protein: Number(editNuts[2]) || 0,
               sugar: Number(editNuts[1]) || 0,
               emoji: editEmoji || '☕',
+              aiGenerated: true,
             }),
           });
           if (!res.ok) { Alert.alert('오류', '저장에 실패했습니다.'); return; }
@@ -305,6 +307,7 @@ export default function MenuDetailScreen() {
           protein: Number(editNuts[2]) || 0,
           sugar: Number(editNuts[1]) || 0,
           emoji: editEmoji || '☕',
+          aiGenerated: item?.aiGenerated || false,
           location: cafe?.lat || cafe?.lng ? { lat: cafe.lat, lng: cafe.lng } : undefined,
         }),
       });
@@ -322,23 +325,19 @@ export default function MenuDetailScreen() {
     }
   };
 
-  const handleDeleteIntake = () => {
+  const handleDeleteIntake = async () => {
     if (!fromTimeline || !item?._id) return;
-    Alert.alert('기록 삭제', '이 섭취 기록을 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제', style: 'destructive',
-        onPress: async () => {
-          try {
-            const res = await fetch(`${cleanUrl}/api/intake/delete/${item._id}`, { method: 'DELETE' });
-            if (!res.ok) { Alert.alert('오류', '서버 오류로 삭제되지 않았습니다.'); return; }
-            navigation.goBack();
-          } catch (e) {
-            Alert.alert('오류', '삭제 중 문제가 발생했습니다.');
-          }
-        },
-      },
-    ]);
+    try {
+      const res = await fetch(`${cleanUrl}/api/intake/delete/${item._id}`, { method: 'DELETE' });
+      if (!res.ok) { Alert.alert('오류', '서버 오류로 삭제되지 않았습니다.'); return; }
+      navigation.navigate('RecordComplete', {
+        coffeeName: editCoffeeName || '메뉴',
+        isDelete: true,
+        user,
+      });
+    } catch (e) {
+      Alert.alert('오류', '삭제 중 문제가 발생했습니다.');
+    }
   };
 
   const handleOpenMap = () => {

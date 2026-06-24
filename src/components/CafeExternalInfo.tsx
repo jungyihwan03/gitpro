@@ -121,12 +121,6 @@ export default function CafeExternalInfo({ details, loading }: CafeExternalInfoP
           </View>
         )}
 
-        <View style={[styles.infoItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-          <Ionicons name="logo-instagram" size={20} color={Colors.text2} style={styles.infoIcon} />
-          <View style={styles.infoContent}>
-            <Text style={styles.infoSecondary}>인스타그램 정보가 없습니다</Text>
-          </View>
-        </View>
       </View>
     </>
   );

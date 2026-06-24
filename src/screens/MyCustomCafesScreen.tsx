@@ -18,18 +18,21 @@ export default function MyCustomCafesScreen() {
   const backendUrl = process.env.EXPO_PUBLIC_BACKEND_API_URL;
   const cleanUrl = backendUrl?.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
 
-  const fetchCafes = useCallback(async () => {
-    if (!userData._id) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${cleanUrl}/api/user-cafe/list/${userData._id}`);
-      const data = await res.json();
-      setCafes(Array.isArray(data) ? data : []);
-    } catch (e) {
-      console.warn('fetchCafes fail', e);
-    } finally {
-      setLoading(false);
+  const fetchCafes = useCallback(() => {
+    async function load() {
+      if (!userData._id) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`${cleanUrl}/api/user-cafe/list/${userData._id}`);
+        const data = await res.json();
+        setCafes(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.warn('fetchCafes fail', e);
+      } finally {
+        setLoading(false);
+      }
     }
+    load();
   }, [userData._id, cleanUrl]);
 
   useFocusEffect(fetchCafes);

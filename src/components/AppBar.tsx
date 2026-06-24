@@ -34,13 +34,6 @@ export default function AppBar({ userName, onSearchPress }: AppBarProps) {
             <Path d="M15.5 15.5L20 20" stroke={Colors.text1} strokeWidth="1.8" strokeLinecap="round" />
           </Svg>
         </TouchableOpacity>
-        <TouchableOpacity activeOpacity={0.6} style={styles.iconBtn}>
-          <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <Path d="M12 2C12.6 2 13 2.4 13 3v1.1C16.4 4.6 19 7.5 19 11v6l2 2v1H3v-1l2-2v-6C5 7.5 7.6 4.6 11 4.1V3C11 2.4 11.4 2 12 2z" fill={Colors.text1} />
-            <Path d="M9.8 21a2.2 2.2 0 004.4 0H9.8z" fill={Colors.text1} />
-          </Svg>
-          <View style={styles.notifDot} />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -63,5 +56,4 @@ const styles = StyleSheet.create({
   nameText: { fontSize: 16, fontWeight: '700', color: Colors.text1, lineHeight: 20 },
   topActions: { flexDirection: 'row' },
   iconBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  notifDot: { position: 'absolute', top: 10, right: 10, width: 8, height: 8, backgroundColor: Colors.error, borderRadius: 4, borderWidth: 1.5, borderColor: Colors.surface },
 });

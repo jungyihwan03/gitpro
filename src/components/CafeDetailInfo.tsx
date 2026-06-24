@@ -85,7 +85,7 @@ export default function CafeDetailInfo({ vicinity, placeHours, phone }: CafeDeta
 
       {/* 전화 */}
       {phone && (
-        <TouchableOpacity style={styles.infoItem} onPress={() => Linking.openURL(`tel:${phone}`)}>
+        <TouchableOpacity style={[styles.infoItem, { borderBottomWidth: 0 }]} onPress={() => Linking.openURL(`tel:${phone}`)}>
           <Ionicons name="call" size={20} color={Colors.text2} style={styles.infoIcon} />
           <View style={styles.infoContent}>
             <Text style={styles.infoPrimary}>{phone}</Text>
@@ -95,13 +95,6 @@ export default function CafeDetailInfo({ vicinity, placeHours, phone }: CafeDeta
         </TouchableOpacity>
       )}
 
-      {/* 인스타그램 */}
-      <View style={[styles.infoItem, { borderBottomWidth: 0, paddingBottom: 0 }]}>
-        <Ionicons name="logo-instagram" size={20} color={Colors.text2} style={styles.infoIcon} />
-        <View style={styles.infoContent}>
-          <Text style={styles.infoLink}>instagram.com/midnight_espresso</Text>
-        </View>
-      </View>
     </View>
   );
 }
@@ -129,7 +122,6 @@ const styles = StyleSheet.create({
   hoursExpandText: { fontSize: 13, fontWeight: '500', color: Colors.primary },
   copyBtn: { backgroundColor: 'rgba(139,46,58,0.08)', paddingHorizontal: 14, height: 32, borderRadius: Layout.radiusFull, justifyContent: 'center' },
   copyBtnText: { fontSize: 12, fontWeight: 'bold', color: Colors.primary },
-  infoLink: { fontSize: 14, color: Colors.primary, textDecorationLine: 'underline' },
   fullHours: { marginTop: 12, gap: 0 },
   hoursRowItem: {
     flexDirection: 'row',

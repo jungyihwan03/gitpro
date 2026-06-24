@@ -59,7 +59,7 @@ export const MemoInput = ({ onSubmit }: MemoInputProps) => {
         </TouchableOpacity>
         <TextInput
           style={styles.memoInput}
-          placeholder="이 장소에 대한 간단한 메모를 남겨보세요."
+          placeholder="간단한 메모를 남겨보세요"
           placeholderTextColor={Colors.text3}
           value={memo}
           onChangeText={setMemo}

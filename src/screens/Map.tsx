@@ -165,7 +165,7 @@ export default function Map() {
         }
       } else if (data.type === 'CUSTOM_MARKER_CLICK') {
         const p = data.payload;
-        setSelectedCafe({ name: p.name, vicinity: `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`, place_id: p._id, geometry: { location: { lat: p.lat, lng: p.lng } }, isCustom: true } as any);
+        setSelectedCafe({ name: p.name, vicinity: `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`, place_id: p._id, geometry: { location: { lat: p.lat, lng: p.lng } }, isCustom: true, registeredBy: p.userName } as any);
       } else if (data.type === 'MAP_CENTER') {
         setPendingCenter(data.payload);
         setPlacingMode(false);
@@ -354,6 +354,7 @@ export default function Map() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: selectUserData._id,
+          userName: selectUserData.name || '익명',
           name: customName.trim(),
           address: addressStr,
           lat: pendingCenter.lat,
@@ -374,11 +375,7 @@ export default function Map() {
         setPendingCenter(null);
         // 모든 사용자 목록에 추가 후 지도에 즉시 마커 표시
         customCafesRef.current.push(result.item);
-        webViewRef.current?.injectJavaScript(`addCustomMarker('${result.item.name.replace(/'/g, "\\'")}', ${result.item.lat}, ${result.item.lng}, '${result.item._id}');true;`);
-        navigation.navigate('SimpleCafeDetail', {
-          cafe: { name: customName.trim(), address: addressStr, _id: result.item._id, isCustom: true },
-          user: selectUserData,
-        });
+        webViewRef.current?.injectJavaScript(`addCustomMarker('${result.item.name.replace(/'/g, "\\'")}', ${result.item.lat}, ${result.item.lng}, '${result.item._id}', '${(result.item.userName || '').replace(/'/g, "\\'")}');true;`);
       } else { Alert.alert('오류', '저장에 실패했습니다.'); }
     } catch (e: any) {
       console.log('📡 [user-cafe/add] fetch 실패:', e?.message);

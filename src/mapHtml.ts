@@ -291,7 +291,7 @@ export const getMapHtml = (lat: number, lng: number) => {
 
           var customMarkers = [];
 
-          function addCustomMarker(name, lat, lng, id) {
+          function addCustomMarker(name, lat, lng, id, userName) {
             var pos = new google.maps.LatLng(lat, lng);
             var marker = new google.maps.Marker({
               map: map,
@@ -313,7 +313,7 @@ export const getMapHtml = (lat: number, lng: number) => {
             customMarkers.push(marker);
             allMarkers.push(marker);
             marker.addListener("click", function () {
-              logToApp('CUSTOM_MARKER_CLICK', { name: name, lat: lat, lng: lng, _id: id });
+              logToApp('CUSTOM_MARKER_CLICK', { name: name, lat: lat, lng: lng, _id: id, userName: userName });
             });
           }
 
@@ -322,7 +322,7 @@ export const getMapHtml = (lat: number, lng: number) => {
               var cafes = JSON.parse(jsonStr);
               for (var i = 0; i < cafes.length; i++) {
                 var c = cafes[i];
-                addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id);
+                addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id, c.userName);
               }
             } catch(e) {}
           }
@@ -331,7 +331,7 @@ export const getMapHtml = (lat: number, lng: number) => {
             if (!cafes || !cafes.length) return;
             for (var i = 0; i < cafes.length; i++) {
               var c = cafes[i];
-              addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id);
+              addCustomMarker(c.name || c.coffeeName, c.lat, c.lng, c._id, c.userName);
             }
           }
 

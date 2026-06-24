@@ -122,19 +122,16 @@ export default function HomeScreen() {
     { label: '단백질', value: stats.protein, limit: 60, unit: 'g', dotColor: Colors.primary },
   ];
   let maxPct = 0;
-  let maxItem = percents[0];
+  let maxLabel = '카페인';
   for (const p of percents) {
     const pct = Math.min(p.value / p.limit, 1);
-    if (pct > maxPct) { maxPct = pct; maxItem = p; }
+    if (pct > maxPct) { maxPct = pct; maxLabel = p.label; }
   }
-  const progressPercent = maxPct;
+  const calPct = Math.min(stats.calories / recommendedKcal, 1);
+  const progressPercent = calPct;
   const strokeDashoffset = circleCircumference * (1 - progressPercent);
-  const maxLabel = maxItem.label;
-  const maxValue = maxItem.value;
-  const maxLimit = maxItem.limit;
-  const maxUnit = maxItem.unit;
 
-  const belowNutrients = percents.filter(p => p.label !== maxLabel);
+  const belowNutrients = percents.filter(p => p.label !== '칼로리');
 
   // 안드로이드 뒤로가기
   useEffect(() => {
@@ -189,9 +186,9 @@ export default function HomeScreen() {
                 </Svg>
               </View>
               <View style={styles.chartCenter}>
-                <Text style={styles.cLabel}>{maxLabel} 섭취량</Text>
-                <Text style={styles.cValue}>{maxValue.toLocaleString()} <Text style={styles.cUnit}>{maxUnit}</Text></Text>
-                <Text style={styles.cTotal}>/ {maxLimit.toLocaleString()}{maxUnit}</Text>
+                <Text style={styles.cLabel}>칼로리 섭취량</Text>
+                <Text style={styles.cValue}>{stats.calories.toLocaleString()} <Text style={styles.cUnit}>kcal</Text></Text>
+                <Text style={styles.cTotal}>/ {recommendedKcal.toLocaleString()}kcal</Text>
               </View>
             </View>
           </View>

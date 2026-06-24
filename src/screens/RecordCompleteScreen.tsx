@@ -13,6 +13,7 @@ export default function RecordCompleteScreen() {
   const coffeeName = params.coffeeName || '메뉴';
   const calories = params.calories ?? 0;
   const user = params.user || {};
+  const isDelete = params.isDelete || false;
 
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -36,19 +37,24 @@ export default function RecordCompleteScreen() {
   return (
     <View style={styles.safeArea}>
       <StatusBar style="dark" />
-      <NavHeader title="기록 완료" onBack={() => navigation.goBack()} />
+      <NavHeader title={isDelete ? "삭제 완료" : "기록 완료"} onBack={() => navigation.navigate('MainTabs', { screen: 'Home', params: { user } })} />
       <View style={styles.mainContent}>
         <Animated.View style={[styles.iconWrap, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
           <View style={styles.iconBgPulse} />
           <Svg width="80" height="80" viewBox="0 0 24 24" fill="none">
-            <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill={Colors.primary} />
+            {isDelete ? (
+              <Path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill={Colors.error} />
+            ) : (
+              <Path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill={Colors.primary} />
+            )}
           </Svg>
         </Animated.View>
 
         <View style={styles.textWrap}>
-          <Text style={styles.title}>선택한 메뉴가 기록되었습니다.</Text>
+          <Text style={styles.title}>{isDelete ? "섭취 기록이 삭제되었습니다." : "선택한 메뉴가 기록되었습니다."}</Text>
         </View>
 
+        {!isDelete && (
         <View style={styles.bentoCard}>
           <View style={styles.cardIconWrap}>
             <Svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -63,14 +69,31 @@ export default function RecordCompleteScreen() {
             <Text style={styles.calorieBadgeText}>{calories} kcal</Text>
           </View>
         </View>
+        )}
+
+        {isDelete && (
+        <View style={styles.bentoCard}>
+          <View style={styles.cardIconWrap}>
+            <Svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <Path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill={Colors.error} />
+            </Svg>
+          </View>
+          <View style={styles.cardTextWrap}>
+            <Text style={styles.cardLabel}>삭제된 메뉴</Text>
+            <Text style={styles.cardMenuName}>{coffeeName}</Text>
+          </View>
+        </View>
+        )}
 
         <View style={styles.actionWrap}>
           <TouchableOpacity activeOpacity={0.8} style={styles.btnPrimary} onPress={() => navigation.navigate('MainTabs', { screen: 'Home', params: { user } })}>
             <Text style={styles.btnPrimaryText}>홈 화면으로 돌아가기</Text>
           </TouchableOpacity>
+          {!isDelete && (
           <TouchableOpacity activeOpacity={0.7} style={styles.btnSecondary} onPress={() => navigation.goBack()}>
             <Text style={styles.btnSecondaryText}>기록 계속하기</Text>
           </TouchableOpacity>
+          )}
         </View>
 
       </View>

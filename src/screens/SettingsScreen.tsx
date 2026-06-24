@@ -12,7 +12,6 @@ import BottomNavBar from '../components/BottomNavBar';
 import { SectionHeader } from '../components/SettingsScreen/SectionHeader';
 import { ListItem } from '../components/SettingsScreen/ListItem';
 import { InputField } from '../components/SettingsScreen/InputField';
-import { SwitchItem } from '../components/SettingsScreen/SwitchItem';
 
 export const SettingsScreen = ({ navigation }: any) => {
   const route = useRoute<any>();
@@ -20,10 +19,6 @@ export const SettingsScreen = ({ navigation }: any) => {
   
   // 🌟 [핵심] store 우선, params fallback
   const userData = storeUser || route.params?.user || route.params;
-
-  // 스위치 상태 관리
-  const [alertLimit, setAlertLimit] = useState(false);
-  const [alertNight, setAlertNight] = useState(true);
 
   // 뒤로가기 핸들러
   const handleBack = () => {
@@ -184,31 +179,6 @@ export const SettingsScreen = ({ navigation }: any) => {
               <InputField label="나이" value={String(userData?.age || '-')} suffix="세" editable={false} />
             </View>
           </View>
-        </View>
-
-        {/* ④ 알림 설정 섹션 */}
-        <SectionHeader 
-          title="알림 설정" 
-          icon={
-            <Svg width="20" height="20" viewBox="0 0 24 24">
-              <Path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill={Colors.text2} />
-            </Svg>
-          } 
-        />
-        <View style={styles.listCard}>
-          <SwitchItem 
-            headline="일일 권장량 초과 알림" 
-            supporting="하루 제한량을 넘기면 경고 알림을 보냅니다." 
-            value={alertLimit} 
-            onValueChange={setAlertLimit} 
-          />
-          <SwitchItem 
-            headline="야간 섭취 주의 알림" 
-            supporting="수면 6시간 전 카페인 섭취 시 알림을 보냅니다." 
-            value={alertNight} 
-            onValueChange={setAlertNight} 
-            isLast={true}
-          />
         </View>
 
         {/* ⑤ 기타 섹션 */}
