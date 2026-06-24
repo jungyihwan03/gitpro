@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, PanResponder, Animated, Dimensions, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, PanResponder, Animated, Dimensions, Image, Linking } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Layout } from '../constants';
 import { useNavigation } from '@react-navigation/native';
@@ -49,7 +49,6 @@ function getHoursInfo(cafe: CafeInfo | null | undefined): { text: string; isOpen
 }
 
 export default function CafeBottomSheet({ cafe, distance, selectionMode, onSelectCafe, onDeleteCafe }: CafeBottomSheetProps) {
-  const [memo, setMemo] = useState('');
   const navigation = useNavigation<any>();
 
   const [interactive, setInteractive] = useState(false);
@@ -185,22 +184,6 @@ export default function CafeBottomSheet({ cafe, distance, selectionMode, onSelec
           </View>
         </TouchableOpacity>
 
-        <View style={styles.memoField}>
-          <TextInput
-            style={styles.memoInput}
-            placeholder="이 장소에 대한 메모를 남겨보세요."
-            placeholderTextColor={Colors.text3}
-            multiline
-            value={memo}
-            onChangeText={setMemo}
-          />
-          <TouchableOpacity style={styles.memoEditBtn} activeOpacity={0.6}>
-            <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <Path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" fill={Colors.text2}/>
-            </Svg>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionItem} activeOpacity={0.6} onPress={() => {
             const name = cafeRef.current?.name;
@@ -295,9 +278,6 @@ const styles = StyleSheet.create({
   closingTagOpen: { backgroundColor: '#DCFCE7' },
   closingTagClosed: { backgroundColor: '#FEE2E2' },
   closingText: { fontSize: 11, fontWeight: '700' },
-  memoField: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Layout.radiusMd, borderWidth: 1.5, borderColor: Colors.border, paddingLeft: 16, paddingRight: 12, minHeight: 52, marginBottom: 16 },
-  memoInput: { flex: 1, fontSize: 14, color: Colors.text1, paddingVertical: 14, maxHeight: 80 },
-  memoEditBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   actionRow: { flexDirection: 'row', justifyContent: 'space-around' },
   actionItem: { alignItems: 'center', gap: 6 },
   iconWrap: { width: 56, height: 56, borderRadius: Layout.radiusSm, alignItems: 'center', justifyContent: 'center' },

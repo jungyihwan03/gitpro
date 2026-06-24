@@ -113,13 +113,28 @@ export default function HomeScreen() {
   };
 
   // 4. 차트 수치 계산
-  const currentKcal = stats.calories;
   const circleCircumference = 2 * Math.PI * 72;
-  let progressPercent = currentKcal / recommendedKcal; 
-  if (progressPercent > 1) progressPercent = 1; 
+  
+  const percents = [
+    { label: '카페인', value: stats.caffeine, limit: 400, unit: 'mg', dotColor: '#6F4E37' },
+    { label: '칼로리', value: stats.calories, limit: recommendedKcal, unit: 'kcal', dotColor: Colors.primary },
+    { label: '당류', value: stats.sugar, limit: 50, unit: 'g', dotColor: Colors.warning },
+    { label: '단백질', value: stats.protein, limit: 60, unit: 'g', dotColor: Colors.primary },
+  ];
+  let maxPct = 0;
+  let maxItem = percents[0];
+  for (const p of percents) {
+    const pct = Math.min(p.value / p.limit, 1);
+    if (pct > maxPct) { maxPct = pct; maxItem = p; }
+  }
+  const progressPercent = maxPct;
   const strokeDashoffset = circleCircumference * (1 - progressPercent);
+  const maxLabel = maxItem.label;
+  const maxValue = maxItem.value;
+  const maxLimit = maxItem.limit;
+  const maxUnit = maxItem.unit;
 
-  const caffeinePercent = Math.min(stats.caffeine / 400, 1);
+  const belowNutrients = percents.filter(p => p.label !== maxLabel);
 
   // 안드로이드 뒤로가기
   useEffect(() => {
@@ -174,37 +189,34 @@ export default function HomeScreen() {
                 </Svg>
               </View>
               <View style={styles.chartCenter}>
-                <Text style={styles.cLabel}>칼로리 섭취량</Text>
-                <Text style={styles.cValue}>{currentKcal.toLocaleString()} <Text style={styles.cUnit}>kcal</Text></Text>
-                <Text style={styles.cTotal}>/ {recommendedKcal.toLocaleString()}kcal</Text>
+                <Text style={styles.cLabel}>{maxLabel} 섭취량</Text>
+                <Text style={styles.cValue}>{maxValue.toLocaleString()} <Text style={styles.cUnit}>{maxUnit}</Text></Text>
+                <Text style={styles.cTotal}>/ {maxLimit.toLocaleString()}{maxUnit}</Text>
               </View>
             </View>
           </View>
 
-          {/* 🌟 팀원이 지웠던 당류를 되살리고, 2줄(윗줄:당류/단백질, 아랫줄:카페인) 구조로 복구 */}
+          {/* 2줄: 1행 2개, 2행 1개 가운데 */}
           <View style={styles.nutrientsWrapper}>
-            {/* 첫 번째 줄: 당류 & 단백질 */}
             <View style={styles.nutrientsRow}>
               <View style={styles.nutrientItem}>
-                <View style={[styles.nDot, { backgroundColor: Colors.warning }]} />
-                <Text style={styles.nLabel}>당류</Text>
-                <Text style={styles.nVal}>{stats.sugar || 0}g</Text>
-                <Text style={styles.nTotal}>/ 50g</Text>
+                <View style={[styles.nDot, { backgroundColor: belowNutrients[0].dotColor }]} />
+                <Text style={styles.nLabel}>{belowNutrients[0].label}</Text>
+                <Text style={styles.nVal}>{belowNutrients[0].value || 0}{belowNutrients[0].unit}</Text>
+                <Text style={styles.nTotal}>/ {belowNutrients[0].limit}{belowNutrients[0].unit}</Text>
               </View>
               <View style={styles.nutrientItem}>
-                <View style={[styles.nDot, { backgroundColor: Colors.primary, opacity: 0.5 }]} />
-                <Text style={styles.nLabel}>단백질</Text>
-                <Text style={styles.nVal}>{stats.protein || 0}g</Text>
-                <Text style={styles.nTotal}>/ 60g</Text>
+                <View style={[styles.nDot, { backgroundColor: belowNutrients[1].dotColor }]} />
+                <Text style={styles.nLabel}>{belowNutrients[1].label}</Text>
+                <Text style={styles.nVal}>{belowNutrients[1].value || 0}{belowNutrients[1].unit}</Text>
+                <Text style={styles.nTotal}>/ {belowNutrients[1].limit}{belowNutrients[1].unit}</Text>
               </View>
             </View>
-
-            {/* 두 번째 줄: 카페인 (가운데 정렬) */}
             <View style={styles.nutrientItem}>
-              <View style={[styles.nDot, { backgroundColor: '#6F4E37' }]} />
-              <Text style={styles.nLabel}>카페인</Text>
-              <Text style={styles.nVal}>{stats.caffeine || 0}mg</Text>
-              <Text style={styles.nTotal}>/ 400mg</Text>
+              <View style={[styles.nDot, { backgroundColor: belowNutrients[2].dotColor }]} />
+              <Text style={styles.nLabel}>{belowNutrients[2].label}</Text>
+              <Text style={styles.nVal}>{belowNutrients[2].value || 0}{belowNutrients[2].unit}</Text>
+              <Text style={styles.nTotal}>/ {belowNutrients[2].limit}{belowNutrients[2].unit}</Text>
             </View>
           </View>
 
@@ -216,8 +228,8 @@ export default function HomeScreen() {
 
         <AlertCard 
           title="섭취 알림" 
-          bodyMain="권장 카페인의" 
-          highlightText={`${Math.round(caffeinePercent * 100)}%`} 
+          bodyMain={`권장 ${maxLabel}의`} 
+          highlightText={`${Math.round(maxPct * 100)}%`} 
           bodySub="를 섭취했습니다." 
         />
         
