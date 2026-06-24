@@ -146,7 +146,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
-      <CustomAppBar userName={userName} />
+      <CustomAppBar userName={userName} onSearchPress={() => navigation.navigate('Search', { user: userData })} />
 
       <ScrollView 
         contentContainerStyle={styles.scrollArea} 

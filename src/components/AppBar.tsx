@@ -6,10 +6,10 @@ import { Colors } from '../constants';
 // 🌟 부모(HomeScreen)로부터 이름을 받기 위한 설정
 interface AppBarProps {
   userName?: string;
+  onSearchPress?: () => void;
 }
 
-export default function AppBar({ userName }: AppBarProps) {
-  // 이름이 없으면 '회원'으로 표시
+export default function AppBar({ userName, onSearchPress }: AppBarProps) {
   const displayName = userName || '회원';
 
   return (
@@ -23,13 +23,12 @@ export default function AppBar({ userName }: AppBarProps) {
         </View>
         <View style={styles.greeting}>
           <Text style={styles.subText}>좋은 하루 되세요!</Text>
-          {/* 🌟 고정된 이름 대신 전달받은 이름을 보여줍니다 */}
           <Text style={styles.nameText}>환영합니다, {displayName}님</Text>
         </View>
       </View>
       
       <View style={styles.topActions}>
-        <TouchableOpacity activeOpacity={0.6} style={styles.iconBtn}>
+        <TouchableOpacity activeOpacity={0.6} style={styles.iconBtn} onPress={onSearchPress}>
           <Svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <Circle cx="10.5" cy="10.5" r="6" stroke={Colors.text1} strokeWidth="1.8" />
             <Path d="M15.5 15.5L20 20" stroke={Colors.text1} strokeWidth="1.8" strokeLinecap="round" />
