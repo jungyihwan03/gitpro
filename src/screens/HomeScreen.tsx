@@ -35,7 +35,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({ caffeine: 0, calories: 0, protein: 0, sugar: 0 });
-  const [timeline, setTimeline] = useState([]);
+  const [timeline, setTimeline] = useState<any[]>([]);
 
   // 2. 유저 정보 추출 (store 우선, params fallback)
   const params = route.params || {};

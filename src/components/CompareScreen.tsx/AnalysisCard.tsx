@@ -4,7 +4,7 @@ import { Colors, Layout } from '../../constants';
 
 interface AnalysisCardProps {
   title: string;
-  status: 'LOWER' | 'HIGHER';
+  status: 'LOWER' | 'HIGHER' | 'SAME';
   compareText: string;
   descText: string;
   highlightText: string;
@@ -24,13 +24,14 @@ export const AnalysisCard = ({ title, status, compareText, descText, highlightTe
   };
 
   const isLower = status === 'LOWER';
+  const isSame = status === 'SAME';
 
   return (
     <View style={styles.analysisCard}>
       <View style={styles.cardHeader}>
         <Text style={styles.analysisName}>{title}</Text>
-        <View style={[styles.badge, isLower ? styles.badgeLower : styles.badgeHigher]}>
-          <Text style={[styles.badgeText, isLower ? styles.badgeTextLower : styles.badgeTextHigher]}>
+        <View style={[styles.badge, isSame ? styles.badgeSame : isLower ? styles.badgeLower : styles.badgeHigher]}>
+          <Text style={[styles.badgeText, isSame ? styles.badgeTextSame : isLower ? styles.badgeTextLower : styles.badgeTextHigher]}>
             {status}
           </Text>
         </View>
@@ -72,6 +73,7 @@ const styles = StyleSheet.create({
   },
   badgeLower: { backgroundColor: '#DCFCE7' },
   badgeHigher: { backgroundColor: 'rgba(197,48,48,0.08)' },
+  badgeSame: { backgroundColor: '#E5E7EB' },
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
@@ -79,6 +81,7 @@ const styles = StyleSheet.create({
   },
   badgeTextLower: { color: '#16A34A' },
   badgeTextHigher: { color: '#C53030' },
+  badgeTextSame: { color: '#6B7280' },
   analysisCompare: {
     fontSize: 12,
     color: Colors.text2,
