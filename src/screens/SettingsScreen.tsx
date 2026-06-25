@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { StatusBar } from 'expo-status-bar'
 import Svg, { Path } from 'react-native-svg';
 
@@ -20,6 +20,39 @@ export const SettingsScreen = ({ navigation }: any) => {
   // 🌟 [핵심] store 우선, params fallback
   const userData = storeUser || route.params?.user || route.params;
 
+  // 스위치 상태 관리
+  const [alertLimit, setAlertLimit] = useState(false);
+  const [alertNight, setAlertNight] = useState(true);
+
+  // ✅ 버튼 1개/2개 모두 대응 가능한 커스텀 Alert 상태 관리
+  const [alertConfig, setAlertConfig] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    isConfirm?: boolean;       // true일 때 버튼 2개 렌더링
+    confirmText?: string;      // 확인 버튼 텍스트 (기본값: '확인')
+    onConfirm?: () => void;    // 확인 버튼 눌렀을 때 실행할 함수
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  // ✅ 커스텀 Alert 열기/닫기 함수
+  const showAlert = (
+    title: string, 
+    message: string, 
+    isConfirm = false, 
+    onConfirm?: () => void,
+    confirmText = '확인'
+  ) => {
+    setAlertConfig({ visible: true, title, message, isConfirm, onConfirm, confirmText });
+  };
+
+  const hideAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
+
   // 뒤로가기 핸들러
   const handleBack = () => {
     if (navigation?.goBack) {
@@ -27,22 +60,32 @@ export const SettingsScreen = ({ navigation }: any) => {
     }
   };
 
+  // ✅ 로그아웃 커스텀 모달 적용
   const handleLogout = () => {
-    Alert.alert('로그아웃', '로그아웃 하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      { 
-        text: '확인', 
-        style: 'destructive',
-        onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Login' }] }) 
+    showAlert(
+      '로그아웃', 
+      '로그아웃 하시겠습니까?', 
+      true, // 버튼 2개 활성화
+      () => {
+        hideAlert(); // 모달 닫기
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
       },
-    ]);
+      '로그아웃' // 확인 버튼에 들어갈 텍스트
+    );
   };
 
+  // ✅ 회원탈퇴 커스텀 모달 적용
   const handleWithdraw = () => {
-    Alert.alert('회원탈퇴', '정말 탈퇴하시겠습니까? 모든 데이터가 삭제됩니다.', [
-      { text: '취소', style: 'cancel' },
-      { text: '탈퇴', style: 'destructive' },
-    ]);
+    showAlert(
+      '회원탈퇴', 
+      '정말 탈퇴하시겠습니까?\n모든 데이터가 삭제됩니다.', 
+      true, // 버튼 2개 활성화
+      () => {
+        hideAlert();
+        console.log('회원탈퇴 로직 실행');
+      },
+      '탈퇴'
+    );
   };
 
   // 공통 화살표 아이콘
@@ -216,6 +259,58 @@ export const SettingsScreen = ({ navigation }: any) => {
       {/* 하단 네비게이션 바 */}
       <BottomNavBar activeTab="설정" />
 
+      {/* ✅ 고도화된 커스텀 다이얼로그 (버튼 1개/2개 유동적 변경 가능) */}
+      <Modal
+        transparent={true}
+        visible={alertConfig.visible}
+        animationType="fade"
+        onRequestClose={hideAlert}
+      >
+        <TouchableWithoutFeedback onPress={hideAlert}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>{alertConfig.title}</Text>
+                <Text style={styles.modalMessage}>{alertConfig.message}</Text>
+                
+                {alertConfig.isConfirm ? (
+                  // 👉 Confirm 분기 (취소/확인 2개 버튼 배치)
+                  <View style={styles.modalButtonRow}>
+                    <TouchableOpacity 
+                      style={[styles.modalButton, styles.cancelButton]} 
+                      onPress={hideAlert}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.cancelButtonText}>취소</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[
+                        styles.modalButton, 
+                        // 탈퇴일 때는 배경을 에러색상으로 처리하는 센스 (디자인 포인트)
+                        alertConfig.confirmText === '탈퇴' ? styles.errorButton : styles.confirmButton
+                      ]} 
+                      onPress={alertConfig.onConfirm}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.confirmButtonText}>{alertConfig.confirmText}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  // 👉 Alert 분기 (기본 확인 버튼 1개 배치)
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.fullButton]} 
+                    onPress={hideAlert}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.confirmButtonText}>확인</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
     </View>
   );
 };
@@ -245,4 +340,72 @@ const styles = StyleSheet.create({
   logoutText: { fontSize: 14, fontWeight: '500', color: Colors.text2 },
   withdrawBtn: { height: 44, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center' },
   withdrawText: { fontSize: 14, fontWeight: '700', color: Colors.error },
+// ✅ 커스텀 모달 스타일 추가
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: Colors.surface || '#FFFFFF',
+    borderRadius: Layout.radiusLg || 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text1 || '#000000',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: Colors.text2 || '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  // 버튼 2개일 때 정렬 레이아웃
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1, // 버튼 2개일 때 동일 비율 분할
+    height: 48,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullButton: {
+    width: '100%',
+    backgroundColor: Colors.primary || '#007AFF',
+  },
+  cancelButton: {
+    backgroundColor: Colors.border || '#E5E5EA', // 취소 버튼 연한 배경
+  },
+  confirmButton: {
+    backgroundColor: Colors.primary || '#007AFF', // 일반 확인/로그아웃 버튼 컬러
+  },
+  errorButton: {
+    backgroundColor: Colors.error || '#FF3B30', // 탈퇴 버튼 전용 컬러
+  },
+  cancelButtonText: {
+    color: Colors.text2 || '#666666',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

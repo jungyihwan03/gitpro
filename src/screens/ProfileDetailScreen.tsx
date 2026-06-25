@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Keyboard, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Keyboard, Modal, TouchableWithoutFeedback } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -25,6 +25,21 @@ export const ProfileDetailScreen = () => {
   const [height, setHeight] = useState(String(user.height || ''));
   const [weight, setWeight] = useState(String(user.weight || ''));
   const [age, setAge] = useState(String(user.age || ''));
+
+  // ✅ 커스텀 Alert 상태 관리
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+  });
+
+  // ✅ 커스텀 Alert 열기/닫기 함수
+  const showAlert = (title: string, message: string) => {
+    setAlertConfig({ visible: true, title, message });
+  };
+  const hideAlert = () => {
+    setAlertConfig((prev) => ({ ...prev, visible: false }));
+  };
 
   const setUser = useUserStore((s) => s.setUser);
 
@@ -58,12 +73,12 @@ export const ProfileDetailScreen = () => {
         setUser(merged);
         setNickname(newName);
         navigation.setParams({ user: merged });
-        Alert.alert('완료', '닉네임이 변경되었습니다.');
+        showAlert('완료', '닉네임이 변경되었습니다.');
       } else {
-        Alert.alert('오류', JSON.stringify(data));
+        showAlert('오류', JSON.stringify(data));
       }
     } catch (e: any) {
-      Alert.alert('오류', `네트워크: ${e.message}`);
+      showAlert('오류', `네트워크: ${e.message}`);
     }
   };
   
@@ -83,12 +98,12 @@ export const ProfileDetailScreen = () => {
       const data = await res.json();
       if (res.ok) {
         updateFromServer(data.user);
-        Alert.alert('완료', '신체 정보가 저장되었습니다.');
+        showAlert('완료', '신체 정보가 저장되었습니다.');
       } else {
-        Alert.alert('오류', JSON.stringify(data));
+        showAlert('오류', JSON.stringify(data));
       }
     } catch (e: any) {
-      Alert.alert('오류', `네트워크: ${e.message}`);
+      showAlert('오류', `네트워크: ${e.message}`);
     }
   };
 
@@ -143,6 +158,32 @@ export const ProfileDetailScreen = () => {
         </TouchableOpacity>
 
       </ScrollView>
+      {/* ✅ 커스텀 모달 다이얼로그 추가 */}
+      <Modal
+        transparent={true}
+        visible={alertConfig.visible}
+        animationType="fade"
+        onRequestClose={hideAlert}
+      >
+        <TouchableWithoutFeedback onPress={hideAlert}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>{alertConfig.title}</Text>
+                <Text style={styles.modalMessage}>{alertConfig.message}</Text>
+                
+                <TouchableOpacity 
+                  style={styles.modalButton} 
+                  onPress={hideAlert}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.modalButtonText}>확인</Text>
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </View>
   );
 };
@@ -176,5 +217,51 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: Colors.text2,
+  },
+// ✅ 커스텀 모달 스타일 추가
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', // 반투명 배경
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: Colors.surface || '#FFFFFF',
+    borderRadius: Layout.radiusLg || 16,
+    padding: 24,
+    alignItems: 'center',
+    // 그림자 효과
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text1 || '#000000',
+    marginBottom: 8,
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: Colors.text2 || '#666666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  modalButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: Colors.primary || '#007AFF',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
