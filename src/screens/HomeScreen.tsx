@@ -244,7 +244,7 @@ export default function HomeScreen() {
             ) : timeline && timeline.length > 0 ? (
               timeline.slice(0, 5).map((log: any, index: number) => (
                 <TimelineItem 
-                  key={log._id}
+                  key={`${log._id}-${index}`}
                   name={log.coffeeName} 
                   time={new Date(log.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
                   kcal={`${log.calories}kcal`} 
