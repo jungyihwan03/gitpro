@@ -240,7 +240,7 @@ export const StatisticsScreen = () => {
             </View>
             {rankings.map((r, i) => (
               <RankingItem
-                key={r.name}
+                key={`${r.name}-${i}`}
                 rank={i + 1}
                 name={r.name}
                 sub={`총 ${r.totalCalories.toLocaleString()}kcal · ${r.count}회 섭취`}

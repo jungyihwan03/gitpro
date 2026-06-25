@@ -108,7 +108,7 @@ export default function HistoryScreen() {
                   <View style={styles.timelineList}>
                     {group.data.map((item: any, index: number) => (
                       <TimelineItem 
-                        key={item._id}
+                        key={`${item._id}-${index}`}
                         name={item.coffeeName} 
                         time={new Date(item.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} 
                         kcal={`${item.calories}kcal`} 
