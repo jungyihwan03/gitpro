@@ -79,7 +79,7 @@ export default function DrinkRankingScreen() {
   return (
     <View style={styles.safeArea}>
       <StatusBar style="dark" />
-      <NavHeader title="많이 마신 음료 랭킹" onBack={() => navigation.goBack()} />
+      <NavHeader title="많이 먹은 메뉴 랭킹" onBack={() => navigation.goBack()} />
 
       <ScrollView contentContainerStyle={styles.scrollArea} showsVerticalScrollIndicator={false}>
         {loading ? (
